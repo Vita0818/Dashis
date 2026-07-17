@@ -38,9 +38,9 @@ enum DashisTheme {
     scheme == .dark ? Color.white.opacity(0.22) : Color.black.opacity(0.18)
   }
 
-  static func statusColor(_ status: DashisRunStatus) -> Color {
+  static func statusColor(_ status: DashisProviderTone) -> Color {
     switch status {
-    case .healthy: ok
+    case .connected: ok
     case .watch: warn
     case .incident: bad
     }
@@ -53,6 +53,10 @@ enum DashisType {
   }
 
   static func title(_ size: CGFloat = 30, _ weight: Font.Weight = .semibold) -> Font {
+    .system(size: size, weight: weight, design: .serif)
+  }
+
+  static func navigation(_ size: CGFloat = 14, _ weight: Font.Weight = .semibold) -> Font {
     .system(size: size, weight: weight, design: .serif)
   }
 
@@ -70,52 +74,36 @@ enum DashisType {
 }
 
 extension View {
+  func dashisCardSurface(cornerRadius: CGFloat = 17) -> some View {
+    modifier(DashisCardSurfaceModifier(cornerRadius: cornerRadius))
+  }
+
   func dashisGlassCard(
     cornerRadius: CGFloat = 16,
     fillOpacity: Double = 0.72,
     shadowOpacity: Double = 0.08
   ) -> some View {
-    modifier(DashisGlassCardModifier(
-      cornerRadius: cornerRadius,
-      fillOpacity: fillOpacity,
-      shadowOpacity: shadowOpacity
-    ))
+    dashisCardSurface(cornerRadius: cornerRadius)
   }
 }
 
-private struct DashisGlassCardModifier: ViewModifier {
+private struct DashisCardSurfaceModifier: ViewModifier {
   @Environment(\.colorScheme) private var colorScheme
   let cornerRadius: CGFloat
-  let fillOpacity: Double
-  let shadowOpacity: Double
 
   func body(content: Content) -> some View {
     let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
 
     content
-      .background {
-        shape.fill(DashisTheme.surface(colorScheme).opacity(colorScheme == .dark ? min(fillOpacity, 0.42) : fillOpacity))
-      }
-      .background(.ultraThinMaterial, in: shape)
+      .background(shape.fill(DashisTheme.surface(colorScheme)))
       .overlay {
-        shape.stroke(
-          LinearGradient(
-            colors: [
-              Color.white.opacity(colorScheme == .dark ? 0.08 : 0.72),
-              DashisTheme.stroke(colorScheme),
-              DashisTheme.accent.opacity(colorScheme == .dark ? 0.10 : 0.08)
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-          ),
-          lineWidth: 1
-        )
+        shape.stroke(DashisTheme.stroke(colorScheme), lineWidth: 1)
       }
       .shadow(
-        color: Color.black.opacity(colorScheme == .dark ? max(shadowOpacity * 0.35, 0.04) : shadowOpacity),
-        radius: 18,
+        color: Color.black.opacity(colorScheme == .dark ? 0.10 : 0.035),
+        radius: 12,
         x: 0,
-        y: 10
+        y: 5
       )
   }
 }
@@ -128,6 +116,7 @@ struct DashisPageHeader: View {
     Text(title)
       .font(DashisType.title(32))
       .foregroundStyle(DashisTheme.primaryText(colorScheme))
-    .frame(maxWidth: .infinity, alignment: .leading)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .accessibilityAddTraits(.isHeader)
   }
 }

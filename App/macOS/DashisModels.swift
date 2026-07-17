@@ -1,217 +1,179 @@
-import SwiftUI
+import Foundation
 
-enum DashisDashboardSection: String, CaseIterable, Identifiable {
-  case overview
-  case models
-  case accounts
-  case runs
-  case alerts
-
-  var id: String { rawValue }
-
-  var title: String {
-    switch self {
-    case .overview: "Overview"
-    case .models: "Models"
-    case .accounts: "Accounts"
-    case .runs: "Runs"
-    case .alerts: "Alerts"
-    }
-  }
-
-  var symbolName: String {
-    switch self {
-    case .overview: "rectangle.3.group"
-    case .models: "cpu"
-    case .accounts: "lock.rectangle.stack"
-    case .runs: "list.bullet.rectangle"
-    case .alerts: "exclamationmark.triangle"
-    }
-  }
+enum DashisSelection {
+  static let dashboard = "dashboard"
+  static let settings = "settings"
 }
 
-enum DashisChartMode: String, CaseIterable, Identifiable {
-  case latency
-  case quality
-
-  var id: String { rawValue }
-
-  var title: String {
-    switch self {
-    case .latency: "Latency"
-    case .quality: "Quality"
-    }
-  }
-}
-
-enum DashisRunStatus: String {
-  case healthy
+enum DashisProviderTone: String {
+  case connected
   case watch
   case incident
 }
 
-struct DashisMetric: Identifiable {
+struct DashisProvider: Identifiable, Hashable {
   let id: String
+  var name: String
+  var kind: String
+  var symbolName: String
+  var primary: String
+  var caption: String
+  var statusLabel: String
+  var sourceLabel: String
+  var freshnessLabel: String
+  var tone: DashisProviderTone
+  var progress: Double
+  var stats: [DashisProviderStat]
+  var lines: [DashisProviderLine]
+  var actionTitle: String?
+  var detailTitle: String
+  var detailNote: String
+
+  var isBuiltIn: Bool {
+    ["codex", "claude", "google", "openrouter"].contains(id)
+  }
+}
+
+struct DashisProviderStat: Hashable {
   let title: String
   let value: String
-  let delta: String
-  let tone: DashisRunStatus
 }
 
-struct DashisRun: Identifiable, Hashable {
-  let id: String
+struct DashisProviderLine: Hashable, Identifiable {
+  var id: String { "\(title)\u{1F}\(value)" }
   let title: String
-  let flow: String
-  let model: String
-  let status: DashisRunStatus
-  let latency: Int
-  let cost: Double
-  let quality: Double
-  let owner: String
-  let guardrail: String
-  let tokens: String
-  let budget: String
-  let signals: [DashisSignal]
+  let value: String
 }
 
-struct DashisSignal: Hashable {
-  let title: String
-  let value: Int
-  let tone: DashisRunStatus
-}
+extension DashisProvider {
+  static let codex = DashisProvider(
+    id: "codex",
+    name: "Codex",
+    kind: "Native desktop",
+    symbolName: "terminal",
+    primary: "Not checked",
+    caption: "Personal allowance follows the account's reported plan, credits, and any returned usage windows.",
+    statusLabel: "not checked",
+    sourceLabel: "Experimental",
+    freshnessLabel: "No data",
+    tone: .watch,
+    progress: 0,
+    stats: [
+      DashisProviderStat(title: "Credits", value: "-"),
+      DashisProviderStat(title: "Window", value: "-"),
+      DashisProviderStat(title: "Reset credits", value: "-")
+    ],
+    lines: [
+      DashisProviderLine(title: "Desktop auth", value: "Not checked")
+    ],
+    actionTitle: "Check Codex",
+    detailTitle: "Codex native checks",
+    detailNote: "Desktop usage shows credits and only the windows returned for the signed-in account; Dashis does not assume a fixed rolling window. Workspace analytics uses an analytics-scoped API key kept only in app memory."
+  )
 
-struct DashisAccountStatus: Identifiable {
-  let id: String
-  let title: String
-  let primary: String
-  let secondary: String
-  let usedPercent: Double
-}
+  static let claude = DashisProvider(
+    id: "claude",
+    name: "Claude",
+    kind: "Claude Code status line",
+    symbolName: "sparkles",
+    primary: "Not connected",
+    caption: "A local, opt-in bridge stores only the sanitized 5-hour and 7-day rate-limit windows.",
+    statusLabel: "not connected",
+    sourceLabel: "Official · Local",
+    freshnessLabel: "No data",
+    tone: .watch,
+    progress: 0,
+    stats: [
+      DashisProviderStat(title: "5 hour", value: "-"),
+      DashisProviderStat(title: "7 day", value: "-"),
+      DashisProviderStat(title: "Observed", value: "-")
+    ],
+    lines: [
+      DashisProviderLine(title: "Bridge", value: "Disabled"),
+      DashisProviderLine(title: "Refresh", value: "After a Claude Code response")
+    ],
+    actionTitle: "Reload snapshot",
+    detailTitle: "Claude Code local bridge",
+    detailNote: "Dashis never sends a Claude request to refresh quota. Connect is explicit and reads only the user statusLine setting."
+  )
 
-enum DashisSampleData {
-  static let metrics = [
-    DashisMetric(id: "latency", title: "Latency", value: "612ms", delta: "-8.4%", tone: .healthy),
-    DashisMetric(id: "cost", title: "Cost", value: "$428", delta: "+3.1%", tone: .watch),
-    DashisMetric(id: "quality", title: "Quality", value: "98.2%", delta: "+1.2%", tone: .healthy),
-    DashisMetric(id: "incidents", title: "Incidents", value: "2", delta: "live", tone: .incident)
-  ]
+  static let googleAI = DashisProvider(
+    id: "google",
+    name: "Google AI",
+    kind: "Consumer or Cloud project",
+    symbolName: "cloud",
+    primary: "No quota data",
+    caption: "Consumer subscription quota has no supported third-party balance API. Cloud project quota can be derived from official APIs.",
+    statusLabel: "manual",
+    sourceLabel: "Manual check",
+    freshnessLabel: "No data",
+    tone: .watch,
+    progress: 0,
+    stats: [
+      DashisProviderStat(title: "Mode", value: "Consumer"),
+      DashisProviderStat(title: "Quota", value: "-"),
+      DashisProviderStat(title: "Observed", value: "-")
+    ],
+    lines: [
+      DashisProviderLine(title: "Consumer quota", value: "Open official UI"),
+      DashisProviderLine(title: "Automation", value: "Not available")
+    ],
+    actionTitle: "Open official page",
+    detailTitle: "Google AI quota modes",
+    detailNote: "Consumer mode never reads browser cookies or private CLI state. Project mode uses an explicit Google OAuth grant kept in memory."
+  )
 
-  static let latencySeries: [Double] = [720, 705, 660, 648, 630, 618, 612]
-  static let qualitySeries: [Double] = [96.2, 96.8, 97.4, 97.2, 97.8, 98.0, 98.2]
-  static let requestSeries: [Double] = [4850, 5260, 6010, 6420, 6900, 7340, 7680]
+  static let openRouter = DashisProvider(
+    id: "openrouter",
+    name: "OpenRouter",
+    kind: "OAuth key or management API",
+    symbolName: "network",
+    primary: "Not checked",
+    caption: "Native Swift client checks credits, activity, analytics, and optional generation detail.",
+    statusLabel: "not checked",
+    sourceLabel: "Official",
+    freshnessLabel: "No data",
+    tone: .watch,
+    progress: 0,
+    stats: [
+      DashisProviderStat(title: "Requests", value: "-"),
+      DashisProviderStat(title: "Tokens", value: "-"),
+      DashisProviderStat(title: "Models", value: "-")
+    ],
+    lines: [
+      DashisProviderLine(title: "Credits", value: "Not checked"),
+      DashisProviderLine(title: "Activity", value: "No rows")
+    ],
+    actionTitle: "Connect OpenRouter",
+    detailTitle: "OpenRouter native checks",
+    detailNote: "OAuth is the default least-privilege key flow. Management keys unlock account credits/activity/analytics and are kept only in app memory."
+  )
 
-  static let accounts = [
-    DashisAccountStatus(
-      id: "codex",
-      title: "Codex",
-      primary: "Plan Pro",
-      secondary: "2 reset credits",
-      usedPercent: 42
-    ),
-    DashisAccountStatus(
-      id: "openrouter",
-      title: "OpenRouter",
-      primary: "$74.75 remaining",
-      secondary: "$25.75 used",
-      usedPercent: 26
+  static func custom(name: String, kind: String) -> DashisProvider {
+    DashisProvider(
+      id: "custom-\(UUID().uuidString)",
+      name: name,
+      kind: kind,
+      symbolName: "shippingbox",
+      primary: "Adapter needed",
+      caption: "This provider is registered in the native app session. Add a native adapter before live checks are available.",
+      statusLabel: "local only",
+      sourceLabel: "Manual",
+      freshnessLabel: "No data",
+      tone: .watch,
+      progress: 0,
+      stats: [
+        DashisProviderStat(title: "Status", value: "-"),
+        DashisProviderStat(title: "Checks", value: "-"),
+        DashisProviderStat(title: "Tokens", value: "-")
+      ],
+      lines: [
+        DashisProviderLine(title: "Adapter", value: "Not installed"),
+        DashisProviderLine(title: "Persistence", value: "Session only")
+      ],
+      actionTitle: nil,
+      detailTitle: "\(name) adapter",
+      detailNote: "Custom providers stay adapter-required until a provider-specific Swift service is added."
     )
-  ]
-
-  static let runs = [
-    DashisRun(
-      id: "run-1048",
-      title: "Retrieval summary",
-      flow: "support-rag",
-      model: "gpt-4.1",
-      status: .healthy,
-      latency: 612,
-      cost: 12.4,
-      quality: 98.4,
-      owner: "Ops",
-      guardrail: "Groundedness",
-      tokens: "18.4k",
-      budget: "92%",
-      signals: [
-        DashisSignal(title: "Groundedness", value: 94, tone: .healthy),
-        DashisSignal(title: "Refusal fit", value: 88, tone: .healthy),
-        DashisSignal(title: "Latency budget", value: 79, tone: .healthy)
-      ]
-    ),
-    DashisRun(
-      id: "run-1047",
-      title: "Invoice extraction",
-      flow: "finance-agent",
-      model: "gpt-4.1-mini",
-      status: .watch,
-      latency: 845,
-      cost: 8.1,
-      quality: 94.9,
-      owner: "Finance",
-      guardrail: "Schema match",
-      tokens: "9.7k",
-      budget: "76%",
-      signals: [
-        DashisSignal(title: "Schema match", value: 91, tone: .healthy),
-        DashisSignal(title: "Latency budget", value: 63, tone: .watch),
-        DashisSignal(title: "Retry rate", value: 18, tone: .watch)
-      ]
-    ),
-    DashisRun(
-      id: "run-1046",
-      title: "Policy answer",
-      flow: "legal-copilot",
-      model: "o4-mini",
-      status: .incident,
-      latency: 1180,
-      cost: 16.8,
-      quality: 87.2,
-      owner: "Risk",
-      guardrail: "Citation required",
-      tokens: "26.1k",
-      budget: "41%",
-      signals: [
-        DashisSignal(title: "Citation coverage", value: 58, tone: .incident),
-        DashisSignal(title: "Hallucination risk", value: 38, tone: .incident),
-        DashisSignal(title: "Latency budget", value: 55, tone: .watch)
-      ]
-    ),
-    DashisRun(
-      id: "run-1045",
-      title: "Search ranking",
-      flow: "growth-eval",
-      model: "gpt-4.1-mini",
-      status: .healthy,
-      latency: 488,
-      cost: 4.9,
-      quality: 97.6,
-      owner: "Growth",
-      guardrail: "Preference eval",
-      tokens: "6.2k",
-      budget: "96%",
-      signals: [
-        DashisSignal(title: "Preference win", value: 89, tone: .healthy),
-        DashisSignal(title: "Latency budget", value: 91, tone: .healthy),
-        DashisSignal(title: "Cost budget", value: 86, tone: .healthy)
-      ]
-    ),
-    DashisRun(
-      id: "run-1044",
-      title: "Agent handoff",
-      flow: "code-review",
-      model: "gpt-4.1",
-      status: .watch,
-      latency: 702,
-      cost: 19.3,
-      quality: 95.1,
-      owner: "Platform",
-      guardrail: "Tool safety",
-      tokens: "31.5k",
-      budget: "69%",
-      signals: [
-        DashisSignal(title: "Tool safety", value: 99, tone: .healthy),
-        DashisSignal(title: "Cost budget", value: 64, tone: .watch),
-        DashisSignal(title: "Completion rate", value: 84, tone: .healthy)
-      ]
-    )
-  ]
+  }
 }

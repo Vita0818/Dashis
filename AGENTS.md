@@ -72,6 +72,7 @@ Dashis 是计划中的 AI dashboard 项目。当前尚未确认技术栈、入�
 - `docs/CURRENT_STATE.md`：当前真实状态、已有能力、风险、工作区改动。
 - `docs/TESTING.md`：环境、构建、测试、lint/format 与手动验证方式。
 - `docs/DO_NOT_BREAK.md`：工程禁区、数据、权限、凭据和回归要求。
+- `docs/USER_TUTORIAL.md`：中文用户教程，记录启动、界面、provider 检查、凭据安全、验收和排障方式。
 - `docs/NEXT_TARGET.md`：临时下一目标记录；目标完成或不再有效后删除。
 
 ## 完成标准
@@ -83,6 +84,7 @@ Dashis 是计划中的 AI dashboard 项目。当前尚未确认技术栈、入�
 - 保留用户已有改动。
 - 运行与任务相称的检查；文档任务至少运行 `git diff --check` 与 `git status --short`。
 - 将本轮已完成的持久性改动及时回写到相关项目文档；若无需更新文档，最终报告说明原因。
+- 任何影响启动/构建、Run action、用户界面流程、provider 接入、凭据处理、endpoint allowlist、验证方式或排障方式的改动，必须同步更新 `docs/USER_TUTORIAL.md`；若无需更新教程，最终报告说明原因。
 - 如未运行构建或测试，最终报告必须明确写“未运行构建/测试”。
 
 ## 最终报告格式
