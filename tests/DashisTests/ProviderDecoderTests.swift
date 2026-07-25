@@ -226,6 +226,135 @@ final class OpenRouterUsageDecoderTests: XCTestCase {
     XCTAssertEqual(summary.metricTotals["usage"], 2)
     XCTAssertTrue(summary.truncated)
   }
+
+  func testRecentCallsDecoderKeepsRowsDistinctAndAcceptsStringMetrics() throws {
+    let observedAt = Date(timeIntervalSince1970: 1_800_000_000)
+    let rangeStart = observedAt.addingTimeInterval(-86_400)
+    let duplicateRow: [String: Any] = [
+      "generation_id": "gen-synthetic-one",
+      "api_key_id": "batch-key",
+      "date__hour": "2027-01-15T07:00:00Z",
+      "total_usage": "0.0125",
+      "tokens_total": "42"
+    ]
+    let page = try OpenRouterUsageClient.decodeRecentCallsPage(
+      [
+        "data": [
+          "data": [
+            duplicateRow,
+            [
+              "generation_id": "gen-synthetic-two",
+              "api_key_id": "interactive-key",
+              "date__hour": "2027-01-15T08:00:00Z",
+              "total_usage": 0.025,
+              "tokens_total": 84
+            ],
+            duplicateRow
+          ],
+          "metadata": ["row_count": "3", "truncated": true]
+        ]
+      ],
+      requestedMetrics: ["total_usage", "tokens_total"],
+      dimensions: ["generation_id", "api_key_id"],
+      granularity: "hour",
+      observedAt: observedAt,
+      rangeStart: rangeStart,
+      requestedLimit: 20
+    )
+
+    XCTAssertEqual(page.calls.map(\.id), ["gen-synthetic-two", "gen-synthetic-one"])
+    XCTAssertEqual(page.calls.last?.usage, 0.0125)
+    XCTAssertEqual(page.calls.last?.totalTokens, 42)
+    XCTAssertEqual(page.returnedRowCount, 3)
+    XCTAssertTrue(page.isTruncated)
+
+    let emptyTruncated = try OpenRouterUsageClient.decodeRecentCallsPage(
+      [
+        "data": [
+          "data": [],
+          "metadata": ["row_count": 0, "truncated": true]
+        ]
+      ],
+      requestedMetrics: ["request_count"],
+      dimensions: ["generation_id"],
+      granularity: "hour",
+      observedAt: observedAt,
+      rangeStart: rangeStart,
+      requestedLimit: 20
+    )
+    XCTAssertTrue(emptyTruncated.calls.isEmpty)
+    XCTAssertNotNil(emptyTruncated.truncationMessage)
+  }
+
+  func testRecentCallsDecoderRejectsInvalidOrConflictingGenerationRows() {
+    let observedAt = Date(timeIntervalSince1970: 1_800_000_000)
+    let base: [String: Any] = [
+      "data": [
+        "data": [[
+          "generation_id": "bad\ngeneration",
+          "date__hour": "2027-01-15T08:00:00Z",
+          "request_count": 1
+        ]],
+        "metadata": ["row_count": 1, "truncated": false]
+      ]
+    ]
+    XCTAssertThrowsError(try OpenRouterUsageClient.decodeRecentCallsPage(
+      base,
+      requestedMetrics: ["request_count"],
+      dimensions: ["generation_id"],
+      granularity: "hour",
+      observedAt: observedAt,
+      rangeStart: observedAt.addingTimeInterval(-86_400),
+      requestedLimit: 20
+    ))
+
+    let conflicting: [String: Any] = [
+      "data": [
+        "data": [
+          [
+            "generation_id": "gen-conflict",
+            "date__hour": "2027-01-15T08:00:00Z",
+            "request_count": 1
+          ],
+          [
+            "generation_id": "gen-conflict",
+            "date__hour": "2027-01-15T07:00:00Z",
+            "request_count": 1
+          ]
+        ],
+        "metadata": ["row_count": 2, "truncated": false]
+      ]
+    ]
+    XCTAssertThrowsError(try OpenRouterUsageClient.decodeRecentCallsPage(
+      conflicting,
+      requestedMetrics: ["request_count"],
+      dimensions: ["generation_id"],
+      granularity: "hour",
+      observedAt: observedAt,
+      rangeStart: observedAt.addingTimeInterval(-86_400),
+      requestedLimit: 20
+    ))
+
+    let negativeUsage: [String: Any] = [
+      "data": [
+        "data": [[
+          "generation_id": "gen-negative",
+          "date__hour": "2027-01-15T08:00:00Z",
+          "total_usage": -0.01
+        ]],
+        "metadata": ["row_count": 1, "truncated": false]
+      ]
+    ]
+    XCTAssertThrowsError(try OpenRouterUsageClient.decodeRecentCallsPage(
+      negativeUsage,
+      requestedMetrics: ["total_usage"],
+      dimensions: ["generation_id"],
+      granularity: "hour",
+      observedAt: observedAt,
+      rangeStart: observedAt.addingTimeInterval(-86_400),
+      requestedLimit: 20
+    ))
+  }
 }
 
 final class ClaudeBridgeTests: XCTestCase {

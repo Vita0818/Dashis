@@ -11,7 +11,7 @@ Dashis 固定提供四个 provider：
 | Codex | Personal desktop；Enterprise workspace analytics | Personal 为非公开实验接口；Enterprise 为官方 workspace usage |
 | Claude | Claude Code statusLine 本地 bridge | 官方本地字段的净化 snapshot |
 | Google AI | Consumer subscription；Gemini API project | Consumer 人工查看；Project 由官方 Cloud API 推导 |
-| OpenRouter | OAuth key；Advanced management key | 官方 key limit 或账户级 credits/activity/analytics |
+| OpenRouter | Account；Single key | 默认读取账户级 credits/activity/analytics；可选查看单 key limit |
 
 当前不能动态 Add provider，也没有无实际偏好项的说明型 Settings 页面。iOS、后端、长期历史、通知、自动定时刷新和跨启动凭据仍未实现。
 
@@ -196,31 +196,48 @@ Consumer mode 的 `Clear Google data` 或 Project mode 的 `Clear Google session
 
 ## OpenRouter
 
-OpenRouter 页面有 `OAuth key` 与 `Management key` 两个 mode。切换 mode 会取消当前 OpenRouter OAuth 操作、清除该 provider 的临时 key 和 snapshot；必要时重新连接或重新输入 management key。
+OpenRouter 页面有 `Account` 与 `Single key` 两个 mode，默认是整个账户视角。切换 mode 会取消当前 OpenRouter OAuth 操作、清除该 provider 的临时 credential 和 snapshot；必要时重新输入 management key 或重新连接 single key。
 
-### 默认 OAuth key
+### 默认 Account
 
-1. 保持 `OAuth key` mode。
-2. 点击 `Connect OpenRouter`。
-3. 在系统默认浏览器中确认授权。
-4. 回到 Dashis 查看 key limit/usage/remaining；之后可点击 `Check key limit` 重查。
+1. 保持 `Account` mode。
+2. 若从 Dashboard 开始，点击 `Set up account` 进入 OpenRouter 详情；再点击 `Create a management key in OpenRouter`，在官方页面创建 Management API key。
+3. 回到 Dashis，把 key 临时输入 `Management key · session only`。
+4. 点击 `Check whole account`。
+5. 若要看近期调用，先等账户检查成功，再展开 `Recent calls · metadata only`。
+6. 选择 1–30 天窗口并点击 `Load call metadata`。
 
-Dashis 使用随机 `127.0.0.1` callback port 和一次性随机 path，加上 PKCE S256。OpenRouter 官方 OAuth 授权参数没有 `state`，因此 Dashis 不发送伪造 state；callback 的隔离依赖随机 path、严格本机绑定、一次性 listener、精确 path 校验与 PKCE verifier。
+Account 主卡显示 OpenRouter 账户累计购入 credits、累计消费和 `total_credits - total_usage` 得出的 remaining。它不是某一把普通 API key 的消费上限，也不要求其它程序或后续模型调用改用 Dashis 的 key。
 
-授权 code 会通过 `POST /api/v1/auth/keys` 换成用户控制的 OpenRouter API key，再用 `GET /api/v1/key` 读取 key-level limit、usage、`limit_remaining`、reset/expiry。key 只在当前 App session 内存中存在。
+同一次检查还会读取：
 
-点击 `Clear local session` 后，确认框会说明该操作只清理本地 listener/task、key、verifier、输入与 snapshot，不能保证撤销已经在 OpenRouter 服务端创建的 key。如果浏览器端已经批准，而 Dashis 随后取消、崩溃、超时或状态不确定，请到 OpenRouter 官方账户/API keys 页面手工 revoke 对应 key。
+- `/activity`：账户最近 30 个已完成 UTC 日的聚合活动，不加 `api_key_hash` 或 `user_id` 过滤。它按日期、endpoint/model/provider 聚合，不是逐调用原始日志。
+- `/analytics/meta` + `/analytics/query`：在 `Account analysis options` 指定的 1–90 天窗口内读取账户分析；请求显式带 time range，默认不加单-key filters。
+- 可选 `/generation?id=...`：只有你已有 generation ID 时才读取那一次调用的 metadata。Dashis 不读取 prompt/completion 内容。
 
-### Advanced management key
+近期调用区会通过 analytics 的 `generation_id` dimension 读取最多 20 条账户级 metadata 行，并在可用时附带 key/model 标签、时间 bucket、usage/cost 和 token。请求显式使用 `group_limit: 1` 与总 `limit: 20`，避免 OpenRouter 对 time-series 查询自动提高返回行数。它是独立查询：失败不会清掉已经成功显示的账户余额。
 
-只有需要账户级数据时才切换到 `Management key`：
+OpenRouter 官方目前没有一个带 cursor、可直接列出全部逐调用 generations/logs 的公开 API，因此这个列表不是完整历史，也不保证恰好是“最新 20 条”。同一 ID 会去重，OpenRouter 也可能返回 `truncated`；Dashis 会明确提示，而不会把结果称为全部日志。修改 Call window 会清掉旧列表，需重新点击加载，防止把旧 1 天结果误看成新 30 天结果。Dashis 不请求 prompt/response，也不调用 `/generation/content`。
 
-1. 输入临时 `management API key`。
-2. 可选输入 `generation id`。
-3. 选择 1–90 天 Analytics window。
-4. 点击 `Check management data`。
+Management key 本身可以管理账户 key，权限高于普通推理 key，而且不能用于模型 completion。Dashis 只把它保存在当前 App 内存中，并且 endpoint allowlist 不允许 `/api/v1/keys` 的创建、修改、禁用或删除操作。`Clear local session` 会清掉内存中的 management key、输入、snapshot 与 recent-call metadata。
 
-此模式查询账户 credits、过去 activity、beta analytics meta/query 和可选 generation detail。analytics 先读取 meta，只汇总服务端标为非 rate 的可加总 metric。若结果 `truncated`，Dashis 会自动把时间窗缩小一半重试一次并明确标注较窄口径；若重试仍被截断，UI 保持不完整警告，用户可继续缩短 Analytics window 后重查。
+### 可选 Single key
+
+只有想检查某一把普通 key 自己的 limit/usage/remaining 时才切换 `Single key`：
+
+1. 点击 `Connect OpenRouter`。
+2. 在系统默认浏览器中确认授权；OpenRouter 会创建/返回一把用户控制的普通 API key，并可能要求设置该 key 的消费上限。
+3. 回到 Dashis 查看 `/api/v1/key` 返回的 key-level limit、usage、`limit_remaining`、reset/expiry。
+
+这个金额只是单 key 的消费上限，不是账户余额，也不是从账户划拨出的独立钱包。只有使用这把 key 的模型请求才会增加它自己的 usage；其它程序可以继续使用自己的 OpenRouter key。
+
+Dashis 使用随机 `127.0.0.1` callback port 和一次性随机 path，加上 PKCE S256。OpenRouter 官方 OAuth 授权参数没有 `state`，因此 Dashis 不发送伪造 state；callback 的隔离依赖随机 path、严格本机绑定、一次性 listener、精确 path 校验与 PKCE verifier。OAuth key 只在当前 App session 内存中存在。
+
+Single-key 模式执行 `Clear local session` 时只能清理 Dashis 的 listener/task、key、verifier、输入与 snapshot，不能保证撤销已经在 OpenRouter 服务端创建的 key。如果浏览器端已经批准，而 Dashis 随后取消、崩溃、超时或状态不确定，请到 OpenRouter 官方账户/API keys 页面手工 revoke 对应 key。
+
+### 账户数值规则
+
+Analytics 会先读取 meta，只汇总服务端标为非 rate 的可加总 metric。若结果 `truncated`，Dashis 会自动把时间窗缩小一半重试一次并明确标注较窄口径；若重试仍被截断，UI 保持不完整警告，用户可继续缩短 Analytics window 后重查。
 
 理解数值规则：
 
@@ -230,7 +247,7 @@ Dashis 使用随机 `127.0.0.1` callback port 和一次性随机 path，加上 P
 - 不同日期、模型或 endpoint 的 rate 不会被相加成伪造的账户总 rate。
 - credits、activity、analytics、generation 任一失败时，其它成功结果仍会保留，并显示 partial failure。
 
-Management key 同样只在当前 App 内存中存在，`Clear` 后清空；不要把真实 key 写入文档、截图、issue、fixture 或日志。
+不要把真实 management key 或普通 key 写入文档、截图、issue、fixture 或日志。
 
 ## 凭据与 Clear 的共同规则
 
@@ -254,7 +271,7 @@ Management key 同样只在当前 App 内存中存在，`Clear` 后清空；不�
 - Codex personal 为 Experimental；没有实际窗口时不显示推断的 5-hour/weekly 限制，credits 与 available reset credits 分开；Enterprise 是 workspace usage，不冒充个人 remaining。
 - Claude Preview 无持久写入，Apply 才安装 helper并改 settings；已有 statusLine 连接/断开后能恢复。
 - Google consumer 只人工查看；Project mode 显示 Estimated 和约 150 秒延迟警告。
-- OpenRouter OAuth 取消、拒绝、超时、key 过期都有净化错误；Clear 后必要时能按指引去服务端 revoke。
+- OpenRouter 默认 Account mode 显示账户 remaining 和无单-key过滤的聚合活动；账户成功后可加载 1–30 天、最多 20 条 metadata-only recent calls，截断提示清楚且失败不影响余额。Single key 的 OAuth 取消、拒绝、超时、key 过期都有净化错误，Clear 后必要时能按指引去服务端 revoke。
 - 所有 SecureField/session token 在 Clear 或 App 退出后不可复用；日志和 UI 不泄漏凭据/完整响应。
 - light/dark 分别是 macOS 系统白/黑；Dashis 品牌、页标题与主数值保持原有 system serif，正文和控件保持 system sans；卡片边框与阴影克制，不恢复玻璃渐变。
 - Debug `--visual-qa` 只显示合成 Codex snapshot，不读取账户/credential、不自动联网，Release 不启用。
@@ -291,9 +308,16 @@ shared scheme 已设置 `IDEPreferLogStreaming=YES`。`Failed to initialize logg
 
 ### OpenRouter 授权后仍未连接
 
+- 这一节只适用于可选的 `Single key` mode；默认 `Account` mode 不走 OAuth。
 - 确认浏览器回调到本机 `127.0.0.1` 没有被代理/防火墙拦截。
 - 重新点击 Connect，使用新的随机 callback/PKCE session。
 - 如果浏览器已经批准但 App 状态不确定，先到 OpenRouter 官方账户页检查并 revoke 多余 key。
+
+### OpenRouter Account 显示 401/403
+
+- 确认输入的是 OpenRouter `Management API key`，不是普通 API key 或 OAuth 创建的 single key。
+- Management key 只在当前 App session 有效；重启或 Clear 后需要重新输入。
+- Dashis 不会通过 management key 发送模型请求，也不会创建、修改、禁用或删除账户中的其它 key。
 
 ### Codex personal 突然失效
 

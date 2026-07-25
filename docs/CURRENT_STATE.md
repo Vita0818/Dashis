@@ -45,8 +45,11 @@
 
 ### OpenRouter
 
-- 默认模式使用官方 OAuth PKCE，在默认浏览器与随机 `127.0.0.1` callback 上取得用户控制的 API key，再以 `/api/v1/key` 读取 key limit/usage/remaining；官方 OpenRouter flow 没有 state，当前实现以高熵随机 callback path、精确 path 校验和 PKCE 隔离会话；key 仅存当前 app session。
-- Advanced management 模式使用临时 management key，独立查询 credits、activity、analytics meta/query 和可选 generation；单项失败不会抹掉其它数据。
+- 默认 `Account` 模式使用用户显式提供、仅保存在当前 session 的 management key，直接查询账户级 credits、无单-key过滤的 activity、analytics meta/query 和可选 generation；单项失败不会抹掉其它数据。账户 remaining 按官方 `total_credits - total_usage` 计算。
+- `/activity` 是最近 30 个已完成 UTC 日的账户级聚合，不是逐调用原始日志；自选 1–90 天趋势走显式 time range 的 beta analytics。账户检查成功后，独立的 `Recent calls · metadata only` disclosure 可按 1–30 天窗口读取最多 20 条带 `generation_id` 的账户级 analytics 行；该 sidecar 不写入 `ProviderSnapshot`，失败也不会清掉已成功的余额。
+- Recent calls 只显示 generation ID、时间 bucket、可用的 key/model 标签、usage/cost 和 token 等 analytics metadata。更改窗口会先清掉旧列表，避免新控件值与旧查询口径并存。OpenRouter 没有公开的完整、可分页逐调用列表；结果可能被截断或去重，Dashis 不把它称为全部/最新日志，也不读取 prompt/completion 内容或 `/generation/content`。
+- 可选 `Single key` 模式保留官方 OAuth PKCE，在默认浏览器与随机 `127.0.0.1` callback 上取得用户控制的 API key，再以 `/api/v1/key` 读取该 key 自己的 limit/usage/remaining；官方 OpenRouter flow 没有 state，当前实现以高熵随机 callback path、精确 path 校验和 PKCE 隔离会话；key 仅存当前 app session。
+- Management key 本身可管理账户 key，但 Dashis 的 endpoint allowlist 不开放 `/api/v1/keys` 创建、更新或删除接口；当前只允许账户读取/分析请求。Management key 不能用于模型 completion。
 - Analytics 请求先读 `/analytics/meta` 再选择实际存在且可加总的 metric/dimension；rate metric 被排除。`metadata.truncated` 时自动把时间窗缩小一半重试一次，并明确显示实际采用的较窄窗口或仍不完整警告。
 - remaining 不钳制负值；token total 优先官方 `total_tokens`，fallback 为 prompt + completion，reasoning 只作 output breakdown，不重复相加。
 - 不把不同日期、模型或 endpoint 的 rate metric 相加成伪造总 rate。`Clear` 会清除 Dashis 本地 OAuth/key 状态，但若服务端可能已经创建 key，用户仍需在 OpenRouter 官方账户页 revoke。
@@ -56,7 +59,7 @@
 - `ProviderHTTPClient` 使用 ephemeral `URLSessionConfiguration`，禁用 cache、cookie 与 credential store；所有 redirect 均拒绝，429/502/503/504 与有限瞬时网络错误最多重试一次。
 - `ProviderEndpointPolicy` 同时校验 HTTPS、精确 host/path、method、query、body schema 与端口；OAuth 授权 URL 和 localhost callback 另有严格校验。
 - `Clear` 会失效当前 provider generation、关闭活动 OAuth listener，并清除临时 key/token、输入、PKCE/OAuth 会话引用与内存 snapshot，避免迟到响应重新写回。
-- `DashisTests` 当前定义 77 个纯合成、离线测试，覆盖 decoder、Codex credit-only/windowless/dynamic-window 语义、类型化卡片 projection、未知 denominator 不显示进度、OpenRouter balance/window 去重、数值溢出与负 remaining、reasoning、analytics metadata、allowlist、PKCE、Claude 净化/settings 恢复、Google quota 推导与 freshness；不访问真实账户。
+- `DashisTests` 当前定义 84 个纯合成、离线测试，覆盖 decoder、Codex credit-only/windowless/dynamic-window 语义、类型化卡片 projection、未知 denominator 不显示进度、OpenRouter 账户默认入口/无单-key过滤、recent-call metadata sidecar、迟到响应隔离、balance/window 去重、数值溢出与负 remaining、reasoning、analytics metadata、allowlist、PKCE、Claude 净化/settings 恢复、Google quota 推导与 freshness；不访问真实账户。
 
 ### UI 与视觉验收
 
@@ -71,7 +74,7 @@
 - `plutil -lint Dashis.xcodeproj/project.pbxproj`：通过。
 - `xcodebuild -list -project Dashis.xcodeproj`：可发现 `Dashis`、`ClaudeStatusLineHelper`、`DashisTests`。
 - macOS Debug build：通过，helper 被嵌入 `Dashis.app/Contents/MacOS/dashis-claude-statusline`。
-- `xcodebuild test`：77/77 通过；所有测试均为离线合成 fixture，不读取真实 provider 数据。
+- `xcodebuild test`：84/84 通过；所有测试均为离线合成 fixture，不读取真实 provider 数据。
 - `script/build_and_run.sh --verify`：通过；脚本完成 Debug build、LaunchServices 注册并确认 Dashis 进程保持运行。
 - 真实 provider 账户仍需用户在 UI 中主动授权后人工验收；自动测试不会读取任何真实凭据。
 
@@ -85,6 +88,6 @@
 
 ## 工作区注意
 
-- 当前工作树包含用户在本任务前已有的修改与删除；不得清理、回退或覆盖无关改动。
+- 工作树改动以每轮开始时的 `git status --short -- .` 为准；不得清理、回退或覆盖用户已有改动。
 - 未经明确请求，不 add、commit、push 或创建 PR。
 - 真实账号数据仅能通过用户显式操作进入当前 app session；不得把凭据、完整响应或私人路径写入仓库。

@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct DashisDashboardDetail: View {
-  let selectedID: String
+  @Binding var selectedID: String
   @ObservedObject var store: DashisProviderStore
 
   var body: some View {
@@ -37,7 +37,12 @@ struct DashisDashboardDetail: View {
           provider: provider,
           isLoading: store.isLoading(provider.id)
         ) {
-          Task { await store.runPrimaryCheck(for: provider.id) }
+          if provider.id == ProviderID.openRouter.rawValue,
+             store.needsOpenRouterAccountSetup {
+            selectedID = provider.id
+          } else {
+            Task { await store.runPrimaryCheck(for: provider.id) }
+          }
         }
 
         if provider.id != store.providers.last?.id {

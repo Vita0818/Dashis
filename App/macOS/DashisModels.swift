@@ -126,7 +126,7 @@ extension DashisProvider {
   static let openRouter = DashisProvider(
     id: "openrouter",
     name: "OpenRouter",
-    kind: "OAuth key or management API",
+    kind: "Account analytics or single API key",
     symbolName: "network",
     primary: "Not checked",
     caption: "Native Swift client checks credits, activity, analytics, and optional generation detail.",
@@ -142,11 +142,11 @@ extension DashisProvider {
     ],
     lines: [
       DashisProviderLine(title: "Credits", value: "Not checked"),
-      DashisProviderLine(title: "Activity", value: "No rows")
+      DashisProviderLine(title: "Activity", value: "Not checked")
     ],
-    actionTitle: "Connect OpenRouter",
+    actionTitle: "Set up account",
     detailTitle: "OpenRouter native checks",
-    detailNote: "OAuth is the default least-privilege key flow. Management keys unlock account credits/activity/analytics and are kept only in app memory."
+    detailNote: "Account mode reads account-wide credits, activity, and analytics with a session-only management key. Single-key OAuth remains optional."
   )
 
   static func custom(name: String, kind: String) -> DashisProvider {

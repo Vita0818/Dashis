@@ -542,6 +542,19 @@ final class DashisProviderRegistryCorrectnessTests: XCTestCase {
     )
     XCTAssertEqual(Set(store.providers.map(\.id)).count, 4)
     XCTAssertTrue(store.providers.allSatisfy(\.isBuiltIn))
+    XCTAssertEqual(store.openRouterMode, .account)
+    XCTAssertTrue(store.needsOpenRouterAccountSetup)
+    XCTAssertEqual(store.provider(id: ProviderID.openRouter.rawValue)?.actionTitle, "Set up account")
+
+    store.openRouterManagementAPIKey = "sk-or-synthetic"
+    XCTAssertFalse(store.needsOpenRouterAccountSetup)
+    XCTAssertEqual(store.provider(id: ProviderID.openRouter.rawValue)?.actionTitle, "Check whole account")
+
+    store.openRouterMode = .singleKey
+    XCTAssertEqual(store.provider(id: ProviderID.openRouter.rawValue)?.actionTitle, "Connect OpenRouter")
+    store.openRouterMode = .account
+    XCTAssertTrue(store.openRouterManagementAPIKey.isEmpty)
+    XCTAssertEqual(store.provider(id: ProviderID.openRouter.rawValue)?.actionTitle, "Set up account")
   }
 
   func testHistoricalGoogleWindowIsProminentInCardProjection() {

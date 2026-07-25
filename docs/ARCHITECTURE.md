@@ -136,12 +136,35 @@ Project ID/number 由用户手工输入；当前实现不枚举项目。可选 q
 
 ### OpenRouter
 
-OpenRouter 有默认 OAuth key mode 与 Advanced management key mode。
+OpenRouter 有默认 `Account` mode 与可选 `Single key` mode。产品主目标是整个账户的余额和聚合活动，不要求其它模型调用改用 Dashis 创建的 key。
 
-默认 OAuth：
+默认 Account：
 
 ```text
-用户点击 Connect OpenRouter
+用户显式输入 session-only management key
+  -> GET /api/v1/credits
+     -> total_credits / total_usage / computed remaining
+  -> GET /api/v1/activity（不传 api_key_hash/user_id）
+     -> 最近 30 个已完成 UTC 日、按 endpoint/model/provider 聚合
+  -> GET /api/v1/analytics/meta
+  -> POST /api/v1/analytics/query（显式 time range、无默认 filters）
+  -> 可选 GET /api/v1/generation?id=...
+  -> officialDirect account snapshot
+
+账户 snapshot 成功后，用户显式展开 Recent calls
+  -> GET /api/v1/analytics/meta
+  -> POST /api/v1/analytics/query
+     -> generation_id + 最多一个 api_key_id/model dimension
+     -> 显式 1–30 天 time range、hour/day granularity、group_limit 1、limit 20、无 filters
+  -> 独立的 metadata-only sidecar state，不写入 ProviderSnapshot
+```
+
+Management key 是 OpenRouter 账户管理 credential，本身权限高于普通推理 key，且不能用于模型 completion。Dashis 只在当前 App session 内存中持有它；endpoint allowlist 不包含 `/api/v1/keys` 的 create/update/delete 等管理写接口。`/activity` 返回账户聚合而非逐调用日志。OpenRouter 当前没有原生、带 cursor 的“列出全部 generations”公开 endpoint；Recent calls 只枚举最多 20 条 analytics metadata 行，可能截断或去重，不能声称完整或最新。当前可选 generation 详情仍由用户提供 ID；Dashis 不读取 `/generation/content` 或 prompt/completion。
+
+可选 Single key：
+
+```text
+用户切换 Single key 并点击 Connect OpenRouter
   -> 默认浏览器打开 https://openrouter.ai/auth
   -> 随机 127.0.0.1 port + 随机一次性 callback path
   -> PKCE S256（OpenRouter 官方 OAuth 契约没有 state 参数）
@@ -153,15 +176,15 @@ OpenRouter 有默认 OAuth key mode 与 Advanced management key mode。
 
 OpenRouter 官方 OAuth 授权 URL 没有定义 `state`，因此实现不伪造 provider 未接受的 state；callback 的隔离依赖高熵随机 path、只绑定 `127.0.0.1`、精确 path 校验、一次性 listener 与 PKCE verifier。Google OAuth 仍使用并严格校验 state。
 
-Advanced management：
+账户聚合与 analytics：
 
-- session-only management key 并发查询 `/api/v1/credits`、`/api/v1/activity`、`/api/v1/analytics/meta`、`/api/v1/analytics/query` 和可选 `/api/v1/generation?id=...`。
 - analytics 先读取 meta，只选择实际可用且 `is_rate == false` 的可加总 metric/dimension；`metadata.truncated` 时自动缩小时间窗一半重试一次，并明确显示较窄口径或仍不完整警告。
+- Recent calls 先读取 meta，再以 `generation_id` 加最多一个 key/model dimension 发起无 filters 的显式时间查询；选择一个 cost/usage metric 和一个 token metric，并显式设置 `group_limit: 1` 与 `limit: 20`，防止 time-series 查询由服务端自动提高总行数。其 loading/error/result 与账户 `ProviderSnapshot` 分离，列表失败不能抹掉余额；`metadata.truncated` 必须直接显示不完整警告。
 - 每个子请求保留独立 partial failure，不因一个失败抹掉其它有效结果。
 - rate/token metric 分别保留 provider 返回的意义；不得把不同日期、模型或 endpoint 的 rate 相加成一个伪造速率。
 - total token 优先 provider 的 `total_tokens`，缺失时使用 prompt + completion；reasoning 只作 output breakdown，不再次相加。
 
-`Clear` 会取消本地 listener/task 并清除 app 内的 key、verifier、输入与 snapshot，但无法保证撤销已经由 `/auth/keys` 在 OpenRouter 服务端创建的 key。若授权完成后状态不确定，用户必须在 OpenRouter 官方账户页面撤销该 key。
+Account Clear 会清除内存中的 management key、输入、snapshot 和 recent-call sidecar。Single-key Clear 还会取消本地 listener/task 并清除 OAuth key/verifier，但无法保证撤销已经由 `/auth/keys` 在 OpenRouter 服务端创建的 key；若授权完成后状态不确定，用户必须在 OpenRouter 官方账户页面撤销该 key。
 
 ## OAuth 与网络安全边界
 

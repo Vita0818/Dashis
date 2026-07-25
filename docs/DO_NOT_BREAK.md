@@ -96,11 +96,14 @@
 
 - OAuth 授权 URL 必须遵循 OpenRouter 官方参数：`callback_url`、`code_challenge`、`code_challenge_method=S256`。官方契约没有 `state`；不得伪造 state 兼容性声明。
 - 因无 state，必须保留高熵随机 callback path、只绑定 `127.0.0.1`、精确 callback path、一次性 listener 和 PKCE verifier；这些防护不能降级。
-- 普通 OAuth key 与 management key 权限/数据范围必须分开；management mode 必须明确为 Advanced，不得默认索取高权限 key。
+- 普通 OAuth key 与 management key 权限/数据范围必须分开。产品默认 `Account` 模式可以显式要求 session-only management key，因为账户级余额/activity/analytics 是当前目标；UI 必须标明 credential 类型和 session 生命周期，且 Dashis 不得 allowlist 或调用 `/api/v1/keys` 创建、更新、禁用、删除等管理写接口。
+- `Account` 查询不得默认添加 `api_key_hash`、`user_id` 或其它单-key/单成员过滤；`/activity` 必须明确为聚合数据，不能冒充逐调用日志。
+- Recent calls 只能用账户级 analytics 的 `generation_id` 加最多一个 `api_key_id`/model dimension，必须带 hour/day granularity、显式时间范围、`group_limit: 1` 且不带 filters。当前 UI 窗口上限为 30 天、limit 为 20；policy 必须继续限制 generation 查询最多 2 个 dimensions、31 天窗口和 50 行，并拒绝缺失/放宽的 generation `group_limit`。结果只允许 metadata，`metadata.truncated` 必须显示，不得称为完整/全部/最新日志。
+- 不得调用 `/generation/content` 或默认读取 prompt/completion。若未来需要内容，必须先取得用户明确授权并单独评审 logging/ZDR、展示、缓存与清除边界。
 - negative `limit_remaining` 或 `total_credits - total_usage` 必须保留，不得 `max(0, ...)`。
 - total tokens 优先 provider `total_tokens`，缺失时只用 prompt + completion；reasoning 是 completion/output breakdown，不能再加一次。
 - 不把不同 activity row、日期、model 或 endpoint 的 rate 指标相加成账户总 rate；只能汇总定义为可加总的 count/token/usage。
-- analytics 必须先读取 `/analytics/meta` 并排除 `is_rate` metric；不得永久硬编码不存在的 metric/dimension。`metadata.truncated == true` 时自动缩小窗口重试一次，并明确标注较窄口径或仍不完整状态。
+- analytics 必须先读取 `/analytics/meta` 并排除 `is_rate` metric；不得永久硬编码不存在的 metric/dimension。账户汇总 analytics 在 `metadata.truncated == true` 时自动缩小窗口重试一次，并明确标注较窄口径或仍不完整状态；recent-call sidecar 不得隐藏其截断状态。
 - credits、activity、analytics、generation 必须保留独立 partial failure；一个子请求失败不能抹掉其它有效数据。
 
 ## 测试与文档禁区

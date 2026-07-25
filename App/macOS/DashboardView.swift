@@ -14,7 +14,7 @@ struct DashboardView: View {
       .navigationSplitViewColumnWidth(min: 176, ideal: 218)
     } detail: {
       DashisDashboardDetail(
-        selectedID: selectedViewID,
+        selectedID: $selectedViewID,
         store: store
       )
       .frame(maxWidth: .infinity, maxHeight: .infinity)

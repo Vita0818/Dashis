@@ -74,6 +74,73 @@ final class ProviderEndpointPolicyTests: XCTestCase {
     ])
     XCTAssertFalse(ProviderEndpointPolicy.allows(request))
   }
+
+  func testOpenRouterRecentCallsPolicyIsBoundedAndMetadataOnly() throws {
+    var request = URLRequest(url: try XCTUnwrap(URL(string: "https://openrouter.ai/api/v1/analytics/query")))
+    request.httpMethod = "POST"
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+    func setBody(
+      metrics: [String] = ["total_usage", "tokens_total"],
+      dimensions: [String] = ["generation_id", "api_key_id"],
+      granularity: String? = "hour",
+      groupLimit: Int? = 1,
+      limit: Int = 20,
+      start: String = "2026-07-10T00:00:00Z"
+    ) throws {
+      var body: [String: Any] = [
+        "metrics": metrics,
+        "dimensions": dimensions,
+        "limit": limit,
+        "time_range": [
+          "start": start,
+          "end": "2026-07-11T00:00:00Z"
+        ]
+      ]
+      if let granularity { body["granularity"] = granularity }
+      if let groupLimit { body["group_limit"] = groupLimit }
+      request.httpBody = try JSONSerialization.data(withJSONObject: body)
+    }
+
+    try setBody()
+    XCTAssertTrue(ProviderEndpointPolicy.allows(request))
+    try setBody(dimensions: ["generation_id", "api_key_id", "model"])
+    XCTAssertFalse(ProviderEndpointPolicy.allows(request))
+    try setBody(dimensions: ["generation_id", "user"])
+    XCTAssertFalse(ProviderEndpointPolicy.allows(request))
+    try setBody(metrics: ["usage_web"])
+    XCTAssertFalse(ProviderEndpointPolicy.allows(request))
+    try setBody(metrics: ["total_usage", "total_usage"])
+    XCTAssertFalse(ProviderEndpointPolicy.allows(request))
+    try setBody(granularity: nil)
+    XCTAssertFalse(ProviderEndpointPolicy.allows(request))
+    try setBody(groupLimit: nil)
+    XCTAssertFalse(ProviderEndpointPolicy.allows(request))
+    try setBody(groupLimit: 2)
+    XCTAssertFalse(ProviderEndpointPolicy.allows(request))
+    try setBody(limit: 51)
+    XCTAssertFalse(ProviderEndpointPolicy.allows(request))
+    try setBody(start: "2026-06-01T00:00:00Z")
+    XCTAssertFalse(ProviderEndpointPolicy.allows(request))
+
+    var generation = URLRequest(url: try XCTUnwrap(URL(string:
+      "https://openrouter.ai/api/v1/generation?id=gen-synthetic_123"
+    )))
+    generation.httpMethod = "GET"
+    XCTAssertTrue(ProviderEndpointPolicy.allows(generation))
+
+    var opaqueGeneration = URLRequest(url: try XCTUnwrap(URL(string:
+      "https://openrouter.ai/api/v1/generation?id=opaque-request-123"
+    )))
+    opaqueGeneration.httpMethod = "GET"
+    XCTAssertTrue(ProviderEndpointPolicy.allows(opaqueGeneration))
+
+    var content = URLRequest(url: try XCTUnwrap(URL(string:
+      "https://openrouter.ai/api/v1/generation/content?id=gen-synthetic_123"
+    )))
+    content.httpMethod = "GET"
+    XCTAssertFalse(ProviderEndpointPolicy.allows(content))
+  }
 }
 
 final class ProviderSnapshotTests: XCTestCase {

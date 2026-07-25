@@ -661,7 +661,7 @@ struct OpenRouterNativeControls: View {
       .accessibilityLabel("OpenRouter mode")
       .disabled(store.isLoading("openrouter"))
 
-      if store.openRouterMode == .oauthKey {
+      if store.openRouterMode == .singleKey {
         if shouldShowOpenRouterConnectionMessage {
           Text(store.openRouterConnectionMessage)
             .font(DashisType.body(14))
@@ -697,31 +697,48 @@ struct OpenRouterNativeControls: View {
           }
         }
       } else {
-        LabeledContent("Management key") {
+        LabeledContent("Management key · session only") {
           SecureField("", text: $store.openRouterManagementAPIKey)
             .textFieldStyle(.roundedBorder)
-            .accessibilityLabel("Management key")
+            .accessibilityLabel("OpenRouter account management key, kept for this app session only")
+            .help("OpenRouter requires a management key for account-wide credits, activity, and analytics.")
         }
         .disabled(store.isLoading("openrouter"))
-        LabeledContent("Generation ID (optional)") {
-          TextField("", text: $store.openRouterGenerationID)
-            .textFieldStyle(.roundedBorder)
-            .accessibilityLabel("Generation ID, optional")
-        }
-        .disabled(store.isLoading("openrouter"))
-        Stepper(
-          "Window: \(store.openRouterAnalyticsDays) days",
-          value: $store.openRouterAnalyticsDays,
-          in: 1...90
+
+        Link(
+          "Create a management key in OpenRouter",
+          destination: URL(string: "https://openrouter.ai/settings/management-keys")!
         )
-        .font(DashisType.body(14))
+        .font(DashisType.body(13))
+
+        Text("This high-privilege key stays in memory. Dashis only reads account usage and never creates, changes, or deletes your OpenRouter keys; existing model traffic keeps using its current keys.")
+          .font(DashisType.body(13))
+          .foregroundStyle(.secondary)
+          .fixedSize(horizontal: false, vertical: true)
+
+        DisclosureGroup("Account analysis options") {
+          VStack(alignment: .leading, spacing: 10) {
+            LabeledContent("Generation ID (optional)") {
+              TextField("", text: $store.openRouterGenerationID)
+                .textFieldStyle(.roundedBorder)
+                .accessibilityLabel("Generation ID, optional")
+            }
+            Stepper(
+              "Analytics window: \(store.openRouterAnalyticsDays) days",
+              value: $store.openRouterAnalyticsDays,
+              in: 1...90
+            )
+            .font(DashisType.body(14))
+          }
+          .padding(.top, 8)
+        }
         .disabled(store.isLoading("openrouter"))
 
         HStack(spacing: 10) {
           Button {
-            Task { await store.checkOpenRouterManagement() }
+            Task { await store.checkOpenRouterAccount() }
           } label: {
-            Label("Check management data", systemImage: "network")
+            Label("Check whole account", systemImage: "network")
           }
           .buttonStyle(.borderedProminent)
           .disabled(store.isLoading("openrouter"))
@@ -735,6 +752,10 @@ struct OpenRouterNativeControls: View {
             .buttonStyle(.bordered)
           }
         }
+
+        Divider()
+
+        OpenRouterRecentCallsSection(store: store)
       }
     }
     .confirmationDialog(
@@ -747,12 +768,19 @@ struct OpenRouterNativeControls: View {
       }
       Button("Cancel", role: .cancel) {}
     } message: {
-      Text("This clears Dashis only. Revoke any server-side key in OpenRouter if needed.")
+      Text(clearConfirmationMessage)
     }
   }
 
   private var shouldShowOpenRouterConnectionMessage: Bool {
     !["Not connected", "Connected for this app session."].contains(store.openRouterConnectionMessage)
+  }
+
+  private var clearConfirmationMessage: String {
+    if store.openRouterMode == .singleKey {
+      return "This clears Dashis only. Revoke any server-side key in OpenRouter if needed."
+    }
+    return "This clears the management key, account snapshot, and recent call metadata from Dashis memory only."
   }
 
   private var shouldShowClear: Bool {
@@ -761,5 +789,135 @@ struct OpenRouterNativeControls: View {
       || store.isOpenRouterOAuthConnected
       || !store.openRouterManagementAPIKey.isEmpty
       || !store.openRouterGenerationID.isEmpty
+      || store.openRouterRecentCallsState != .idle
+  }
+}
+
+private struct OpenRouterRecentCallsSection: View {
+  @ObservedObject var store: DashisProviderStore
+
+  var body: some View {
+    DisclosureGroup("Recent calls · metadata only") {
+      VStack(alignment: .leading, spacing: 12) {
+        Text("Loads up to 20 account-wide call rows from beta analytics. Dashis requests metadata only and never requests prompts or responses; OpenRouter may truncate the result.")
+          .font(DashisType.body(13))
+          .foregroundStyle(.secondary)
+          .fixedSize(horizontal: false, vertical: true)
+
+        Stepper(
+          "Call window: \(store.openRouterRecentCallsDays) day\(store.openRouterRecentCallsDays == 1 ? "" : "s")",
+          value: $store.openRouterRecentCallsDays,
+          in: 1...30
+        )
+        .font(DashisType.body(14))
+        .disabled(store.isLoading("openrouter"))
+
+        Button {
+          Task { await store.loadOpenRouterRecentCalls() }
+        } label: {
+          Label("Load call metadata", systemImage: "list.bullet.rectangle")
+        }
+        .buttonStyle(.bordered)
+        .disabled(store.isLoading("openrouter") || !store.canLoadOpenRouterRecentCalls)
+
+        if !store.canLoadOpenRouterRecentCalls,
+           store.openRouterRecentCallsState == .idle {
+          Text("Check the whole account successfully before loading call metadata.")
+            .font(DashisType.body(13))
+            .foregroundStyle(.secondary)
+        }
+
+        stateContent
+      }
+      .padding(.top, 10)
+    }
+    .font(DashisType.body(14, .medium))
+  }
+
+  @ViewBuilder private var stateContent: some View {
+    switch store.openRouterRecentCallsState {
+    case .idle:
+      EmptyView()
+    case .loading:
+      ProgressView("Loading call metadata")
+        .controlSize(.small)
+    case .failed(let message):
+      DashisProviderNotice(
+        title: "Recent calls",
+        message: message,
+        symbolName: "xmark.octagon",
+        tone: .incident
+      )
+    case .loaded(let page):
+      if let truncationMessage = page.truncationMessage {
+        DashisProviderNotice(
+          title: "Result truncated",
+          message: truncationMessage,
+          symbolName: "exclamationmark.triangle",
+          tone: .watch
+        )
+      }
+      if page.calls.isEmpty {
+        Text(page.isTruncated
+          ? "No call metadata rows were included in the returned subset."
+          : "No call metadata was returned for the selected window.")
+          .font(DashisType.body(13))
+          .foregroundStyle(.secondary)
+      } else {
+        Text("\(page.calls.count) unique call row\(page.calls.count == 1 ? "" : "s") · \(page.granularity) buckets")
+          .font(DashisType.body(13))
+          .foregroundStyle(.secondary)
+        VStack(spacing: 0) {
+          ForEach(Array(page.calls.enumerated()), id: \.element.id) { index, call in
+            OpenRouterRecentCallRow(call: call)
+            if index < page.calls.count - 1 {
+              Divider()
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+private struct OpenRouterRecentCallRow: View {
+  let call: OpenRouterRecentCall
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 7) {
+      HStack(alignment: .firstTextBaseline, spacing: 12) {
+        Text(call.model ?? call.apiKeyLabel ?? "OpenRouter call")
+          .font(DashisType.body(14, .semibold))
+          .lineLimit(1)
+        Spacer(minLength: 12)
+        if let usage = call.usage {
+          Text(String(format: "$%.4f", usage))
+            .font(DashisType.body(13, .semibold))
+            .monospacedDigit()
+        }
+      }
+
+      Text(call.id)
+        .font(.system(size: 12, design: .monospaced))
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
+        .truncationMode(.middle)
+        .textSelection(.enabled)
+
+      HStack(spacing: 12) {
+        Text(call.bucketStart.formatted(date: .abbreviated, time: .shortened))
+        if let apiKeyLabel = call.apiKeyLabel {
+          Text("Key: \(apiKeyLabel)")
+            .lineLimit(1)
+        }
+        if let totalTokens = call.totalTokens {
+          Text("\(totalTokens.formatted()) tokens")
+        }
+      }
+      .font(DashisType.body(12))
+      .foregroundStyle(.secondary)
+    }
+    .padding(.vertical, 10)
+    .accessibilityElement(children: .combine)
   }
 }

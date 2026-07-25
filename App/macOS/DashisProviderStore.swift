@@ -2,8 +2,8 @@ import AppKit
 import Foundation
 
 enum DashisOpenRouterMode: String, CaseIterable, Identifiable {
-  case oauthKey = "OAuth key"
-  case management = "Management key"
+  case account = "Account"
+  case singleKey = "Single key"
 
   var id: String { rawValue }
 }
@@ -27,15 +27,39 @@ final class DashisProviderStore: ObservableObject {
   @Published var codexAnalyticsAPIKey = ""
   @Published var codexAnalyticsDays = 30
 
-  @Published var openRouterMode: DashisOpenRouterMode = .oauthKey {
+  @Published var openRouterMode: DashisOpenRouterMode = .account {
     didSet {
       guard oldValue != openRouterMode else { return }
       handleOpenRouterModeChange()
     }
   }
-  @Published var openRouterManagementAPIKey = ""
+  @Published var openRouterManagementAPIKey = "" {
+    didSet {
+      guard oldValue != openRouterManagementAPIKey, openRouterMode == .account else { return }
+      invalidateSession(for: .openRouter)
+      openRouterRecentCallsState = .idle
+      if snapshots[.openRouter] != nil {
+        clearSnapshot(
+          for: .openRouter,
+          base: .openRouter,
+          message: "Management key changed; check the account again before loading data."
+        )
+      }
+      refreshPrimaryAction(for: .openRouter)
+    }
+  }
   @Published var openRouterGenerationID = ""
   @Published var openRouterAnalyticsDays = 30
+  @Published var openRouterRecentCallsDays = 1 {
+    didSet {
+      guard oldValue != openRouterRecentCallsDays else { return }
+      if case .loading = openRouterRecentCallsState {
+        invalidateSession(for: .openRouter)
+      }
+      openRouterRecentCallsState = .idle
+    }
+  }
+  @Published private(set) var openRouterRecentCallsState: OpenRouterRecentCallsState = .idle
   @Published private(set) var openRouterConnectionMessage = "Not connected"
   @Published private var openRouterOAuthAPIKey: String?
 
@@ -138,6 +162,21 @@ final class DashisProviderStore: ObservableObject {
     openRouterOAuthAPIKey != nil
   }
 
+  var needsOpenRouterAccountSetup: Bool {
+    openRouterMode == .account
+      && openRouterManagementAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+  }
+
+  var canLoadOpenRouterRecentCalls: Bool {
+    guard openRouterMode == .account,
+          !needsOpenRouterAccountSetup,
+          let snapshot = snapshots[.openRouter]
+    else {
+      return false
+    }
+    return snapshot.scope == .workspace("OpenRouter account") && snapshot.hasData
+  }
+
   var isGoogleProjectConnected: Bool {
     guard let token = googleAccessToken else { return false }
     return token.isUsable()
@@ -174,8 +213,8 @@ final class DashisProviderStore: ObservableObject {
         await checkGoogleProject()
       }
     case ProviderID.openRouter.rawValue:
-      if openRouterMode == .management {
-        await checkOpenRouterManagement()
+      if openRouterMode == .account {
+        await checkOpenRouterAccount()
       } else if isOpenRouterOAuthConnected {
         await checkOpenRouterOAuthKey()
       } else {
@@ -576,7 +615,7 @@ final class DashisProviderStore: ObservableObject {
     apply(snapshot)
   }
 
-  func checkOpenRouterManagement() async {
+  func checkOpenRouterAccount() async {
     let apiKey = openRouterManagementAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !apiKey.isEmpty else {
       invalidateSession(for: .openRouter)
@@ -585,9 +624,12 @@ final class DashisProviderStore: ObservableObject {
         scope: .workspace("OpenRouter account"),
         source: .officialDirect,
         operation: "openrouter.management.input",
-        message: "Enter an OpenRouter management key for the advanced check."
+        message: "Enter an OpenRouter management key to check the whole account."
       )
       return
+    }
+    if case .loading = openRouterRecentCallsState {
+      openRouterRecentCallsState = .idle
     }
     let operationID = beginOperation(for: .openRouter)
     defer { endOperation(for: .openRouter, id: operationID) }
@@ -605,6 +647,44 @@ final class DashisProviderStore: ObservableObject {
     apply(snapshot)
   }
 
+  func loadOpenRouterRecentCalls() async {
+    let apiKey = openRouterManagementAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !apiKey.isEmpty else {
+      openRouterRecentCallsState = .failed(
+        "Enter a management key and check the whole account first."
+      )
+      return
+    }
+    guard canLoadOpenRouterRecentCalls else {
+      openRouterRecentCallsState = .failed(
+        "Check the whole account successfully before loading call metadata."
+      )
+      return
+    }
+
+    openRouterRecentCallsState = .loading
+    let operationID = beginOperation(for: .openRouter)
+    defer { endOperation(for: .openRouter, id: operationID) }
+    let generation = sessionGeneration(for: .openRouter)
+    let days = openRouterRecentCallsDays
+    guard let result = await awaitOperation(for: .openRouter, id: operationID, {
+      await captureProviderResult {
+        try await self.service.openRouter.fetchRecentCalls(
+          apiKey: apiKey,
+          days: days,
+          limit: 20
+        )
+      }
+    }) else { return }
+    guard generation == sessionGeneration(for: .openRouter) else { return }
+    switch result {
+    case .success(let page):
+      openRouterRecentCallsState = .loaded(page)
+    case .failure(let error):
+      openRouterRecentCallsState = .failed(ProviderJSON.safeMessage(error))
+    }
+  }
+
   func clearOpenRouterSession() {
     invalidateSession(for: .openRouter)
     service.openRouterConnections.cancelActiveConnections()
@@ -612,7 +692,9 @@ final class DashisProviderStore: ObservableObject {
     openRouterManagementAPIKey = ""
     openRouterGenerationID = ""
     openRouterAnalyticsDays = 30
-    openRouterMode = .oauthKey
+    openRouterRecentCallsDays = 1
+    openRouterRecentCallsState = .idle
+    openRouterMode = .account
     openRouterConnectionMessage = "Not connected"
     clearSnapshot(
       for: .openRouter,
@@ -681,8 +763,8 @@ final class DashisProviderStore: ObservableObject {
     case .google:
       googleMode == .consumer ? "Open official page" : "Check project quotas"
     case .openRouter:
-      openRouterMode == .management
-        ? "Check management data"
+      openRouterMode == .account
+        ? (needsOpenRouterAccountSetup ? "Set up account" : "Check whole account")
         : (isOpenRouterOAuthConnected ? "Check key limit" : "Connect OpenRouter")
     default:
       nil
@@ -779,13 +861,15 @@ final class DashisProviderStore: ObservableObject {
     openRouterOAuthAPIKey = nil
     openRouterManagementAPIKey = ""
     openRouterGenerationID = ""
+    openRouterRecentCallsDays = 1
+    openRouterRecentCallsState = .idle
     openRouterConnectionMessage = "Not connected"
     clearSnapshot(
       for: .openRouter,
       base: .openRouter,
-      message: openRouterMode == .oauthKey
-        ? "OAuth key mode selected; connect OpenRouter for this app session."
-        : "Management mode selected; enter a temporary management key."
+      message: openRouterMode == .account
+        ? "Account mode selected; enter a temporary management key."
+        : "Single-key mode selected; connect OpenRouter for this app session."
     )
   }
 

@@ -1,5 +1,37 @@
 import Foundation
 
+enum OpenRouterRecentCallsState: Hashable, Sendable {
+  case idle
+  case loading
+  case loaded(OpenRouterRecentCallsPage)
+  case failed(String)
+}
+
+struct OpenRouterRecentCallsPage: Hashable, Sendable {
+  let observedAt: Date
+  let rangeStart: Date
+  let rangeEnd: Date
+  let granularity: String
+  let requestedLimit: Int
+  let returnedRowCount: Int
+  let isTruncated: Bool
+  let calls: [OpenRouterRecentCall]
+
+  var truncationMessage: String? {
+    guard isTruncated else { return nil }
+    return "OpenRouter reported more rows than the selected-window result could include. The displayed metadata is incomplete (up to \(requestedLimit) rows)."
+  }
+}
+
+struct OpenRouterRecentCall: Identifiable, Hashable, Sendable {
+  let id: String
+  let bucketStart: Date
+  let apiKeyLabel: String?
+  let model: String?
+  let usage: Double?
+  let totalTokens: Int?
+}
+
 struct OpenRouterUsageClient: ProviderUsageClient {
   struct ActivityFilter: Sendable {
     var date: String?
@@ -197,6 +229,83 @@ struct OpenRouterUsageClient: ProviderUsageClient {
     }
   }
 
+  func fetchRecentCalls(
+    apiKey: String,
+    days: Int = 1,
+    limit: Int = 20
+  ) async throws -> OpenRouterRecentCallsPage {
+    guard Self.hasCredential(apiKey) else {
+      throw OpenRouterUsageClientError.missingManagementKey
+    }
+
+    let observedAt = now()
+    let metaJSON = try await requestJSON(
+      path: "/api/v1/analytics/meta",
+      apiKey: apiKey,
+      operation: "openrouter.recent-calls.meta"
+    )
+    let definition = try Self.decodeAnalyticsDefinition(metaJSON)
+    guard definition.dimensions.contains("generation_id") else {
+      throw OpenRouterUsageClientError.recentCallsUnavailable
+    }
+
+    let usageMetric = ["total_usage", "usage"].first(where: definition.metrics.contains)
+    let tokenMetric = ["tokens_total", "total_tokens"].first(where: definition.metrics.contains)
+    var requestedMetrics = [usageMetric, tokenMetric].compactMap { $0 }
+    if requestedMetrics.isEmpty, definition.metrics.contains("request_count") {
+      requestedMetrics = ["request_count"]
+    }
+    guard !requestedMetrics.isEmpty else {
+      throw OpenRouterUsageClientError.recentCallsUnavailable
+    }
+
+    var dimensions = ["generation_id"]
+    if definition.dimensions.contains("api_key_id") {
+      dimensions.append("api_key_id")
+    } else if definition.dimensions.contains("model") {
+      dimensions.append("model")
+    }
+    let granularity: String
+    if definition.granularities.contains("hour") {
+      granularity = "hour"
+    } else if definition.granularities.contains("day") {
+      granularity = "day"
+    } else {
+      throw OpenRouterUsageClientError.recentCallsUnavailable
+    }
+
+    let safeDays = max(1, min(days, 30))
+    let safeLimit = max(1, min(limit, 20))
+    let rangeStart = observedAt.addingTimeInterval(Double(-safeDays * 86_400))
+    let body = try JSONSerialization.data(withJSONObject: [
+      "metrics": requestedMetrics,
+      "dimensions": dimensions,
+      "granularity": granularity,
+      "group_limit": 1,
+      "limit": safeLimit,
+      "time_range": [
+        "start": ISO8601DateFormatter.providerStandard.string(from: rangeStart),
+        "end": ISO8601DateFormatter.providerStandard.string(from: observedAt)
+      ]
+    ])
+    let json = try await requestJSON(
+      path: "/api/v1/analytics/query",
+      method: "POST",
+      apiKey: apiKey,
+      body: body,
+      operation: "openrouter.recent-calls.query"
+    )
+    return try Self.decodeRecentCallsPage(
+      json,
+      requestedMetrics: requestedMetrics,
+      dimensions: dimensions,
+      granularity: granularity,
+      observedAt: observedAt,
+      rangeStart: rangeStart,
+      requestedLimit: safeLimit
+    )
+  }
+
   func fetchManagementSnapshot(context: ManagementContext) async -> ProviderSnapshot {
     let observedAt = now()
     let scope = ProviderScope.workspace("OpenRouter account")
@@ -236,7 +345,7 @@ struct OpenRouterUsageClient: ProviderUsageClient {
     var preflightFailures: [ProviderFailure] = []
     if let rawGenerationID = context.generationID?.trimmingCharacters(in: .whitespacesAndNewlines),
        !rawGenerationID.isEmpty {
-      if ProviderEndpointPolicy.sanitizeIdentifier(rawGenerationID) == rawGenerationID {
+      if ProviderEndpointPolicy.isOpenRouterGenerationID(rawGenerationID) {
         do {
           let generationURL = try Self.generationURL(id: rawGenerationID)
           generationResult = await captureProviderResult {
@@ -293,7 +402,7 @@ struct OpenRouterUsageClient: ProviderUsageClient {
       do {
         let summary = try Self.decodeActivity(json)
         metrics.append(contentsOf: [
-          ProviderMetric(key: "activity_rows", label: "Activity rows", value: Double(summary.rowCount), unit: "rows"),
+          ProviderMetric(key: "activity_rows", label: "Activity groups", value: Double(summary.rowCount), unit: "groups"),
           ProviderMetric(key: "requests", label: "Requests", value: Double(summary.requests), unit: "requests"),
           ProviderMetric(key: "total_tokens", label: "Total tokens", value: Double(summary.totalTokens), unit: "tokens"),
           ProviderMetric(key: "prompt_tokens", label: "Prompt tokens", value: Double(summary.promptTokens), unit: "tokens"),
@@ -311,7 +420,7 @@ struct OpenRouterUsageClient: ProviderUsageClient {
 
     if let summary = analytics.summary {
       metrics.append(
-        ProviderMetric(key: "analytics_rows", label: "Analytics rows", value: Double(summary.rowCount), unit: "rows")
+        ProviderMetric(key: "analytics_rows", label: "Analytics groups", value: Double(summary.rowCount), unit: "groups")
       )
       Self.appendMetric(
         &metrics,
@@ -646,6 +755,114 @@ struct OpenRouterUsageClient: ProviderUsageClient {
     )
   }
 
+  static func decodeRecentCallsPage(
+    _ json: Any,
+    requestedMetrics: [String],
+    dimensions: [String],
+    granularity: String,
+    observedAt: Date,
+    rangeStart: Date,
+    requestedLimit: Int
+  ) throws -> OpenRouterRecentCallsPage {
+    guard let root = json as? [String: Any],
+          let data = root["data"] as? [String: Any],
+          let rows = data["data"] as? [Any]
+    else {
+      throw OpenRouterUsageClientError.invalidProviderResponse
+    }
+    let rawMetadata = data["metadata"] ?? root["metadata"]
+    guard let metadata = rawMetadata as? [String: Any],
+          let rowCount = try strictInt(metadata, aliases: ["row_count", "rowCount"]),
+          rowCount >= 0,
+          let truncatedRaw = aliasedValue(metadata, aliases: ["truncated"]),
+          let truncated = ProviderJSON.bool(truncatedRaw),
+          (1...2).contains(requestedMetrics.count),
+          Set(requestedMetrics).count == requestedMetrics.count,
+          requestedMetrics.allSatisfy({
+            ["total_usage", "usage", "tokens_total", "total_tokens", "request_count"].contains($0)
+          }),
+          (1...2).contains(dimensions.count),
+          dimensions.first == "generation_id",
+          Set(dimensions).count == dimensions.count,
+          dimensions.dropFirst().allSatisfy({ ["api_key_id", "model"].contains($0) }),
+          ["hour", "day"].contains(granularity),
+          (1...20).contains(requestedLimit),
+          rows.count <= requestedLimit
+    else {
+      throw OpenRouterUsageClientError.invalidProviderResponse
+    }
+
+    let timeKeys = ["date__\(granularity)", "created_at__\(granularity)"]
+    let usageMetric = ["total_usage", "usage"].first(where: requestedMetrics.contains)
+    let tokenMetric = ["tokens_total", "total_tokens"].first(where: requestedMetrics.contains)
+    var calls: [OpenRouterRecentCall] = []
+    var callsByID: [String: OpenRouterRecentCall] = [:]
+
+    for rawRow in rows {
+      guard let row = rawRow as? [String: Any],
+            let generationID = row["generation_id"] as? String,
+            ProviderEndpointPolicy.isOpenRouterGenerationID(generationID),
+            let rawBucket = aliasedValue(row, aliases: timeKeys),
+            let bucketStart = ProviderJSON.date(rawBucket)
+      else {
+        throw OpenRouterUsageClientError.invalidProviderResponse
+      }
+
+      for metric in requestedMetrics {
+        guard row.keys.contains(metric),
+              let value = ProviderJSON.number(row[metric]),
+              value >= 0
+        else {
+          throw OpenRouterUsageClientError.invalidProviderResponse
+        }
+      }
+      let usage = try usageMetric.flatMap { try strictNumber(row, aliases: [$0]) }
+      let totalTokens = try tokenMetric.flatMap { metric -> Int? in
+        guard let value = try strictInt(row, aliases: [metric]), value >= 0 else {
+          throw OpenRouterUsageClientError.invalidProviderResponse
+        }
+        return value
+      }
+      let apiKeyLabel = dimensions.contains("api_key_id")
+        ? try optionalBoundedString(row["api_key_id"], maximumLength: 512)
+        : nil
+      let model = dimensions.contains("model")
+        ? try optionalBoundedString(row["model"], maximumLength: 512)
+        : nil
+      let call = OpenRouterRecentCall(
+        id: generationID,
+        bucketStart: bucketStart,
+        apiKeyLabel: apiKeyLabel,
+        model: model,
+        usage: usage,
+        totalTokens: totalTokens
+      )
+      if let existing = callsByID[generationID] {
+        guard existing == call else {
+          throw OpenRouterUsageClientError.invalidProviderResponse
+        }
+        continue
+      }
+      callsByID[generationID] = call
+      calls.append(call)
+    }
+
+    calls.sort {
+      if $0.bucketStart == $1.bucketStart { return $0.id < $1.id }
+      return $0.bucketStart > $1.bucketStart
+    }
+    return OpenRouterRecentCallsPage(
+      observedAt: observedAt,
+      rangeStart: rangeStart,
+      rangeEnd: observedAt,
+      granularity: granularity,
+      requestedLimit: requestedLimit,
+      returnedRowCount: rowCount,
+      isTruncated: truncated,
+      calls: calls
+    )
+  }
+
   private func fetchAnalytics(apiKey: String, days: Int, observedAt: Date) async -> AnalyticsFetch {
     let metaJSON: Any
     do {
@@ -896,6 +1113,9 @@ struct OpenRouterUsageClient: ProviderUsageClient {
   }
 
   private static func generationURL(id: String) throws -> URL {
+    guard ProviderEndpointPolicy.isOpenRouterGenerationID(id) else {
+      throw OpenRouterUsageClientError.invalidGenerationID
+    }
     var components = URLComponents(string: "https://openrouter.ai/api/v1/generation")!
     components.queryItems = [URLQueryItem(name: "id", value: id)]
     guard let url = components.url else { throw OpenRouterUsageClientError.invalidGenerationID }
@@ -943,6 +1163,21 @@ struct OpenRouterUsageClient: ProviderUsageClient {
       throw OpenRouterUsageClientError.invalidProviderResponse
     }
     return value
+  }
+
+  private static func optionalBoundedString(
+    _ value: Any?,
+    maximumLength: Int
+  ) throws -> String? {
+    guard let value, !(value is NSNull) else { return nil }
+    guard let string = value as? String,
+          !string.isEmpty,
+          string.count <= maximumLength,
+          !string.unicodeScalars.contains(where: CharacterSet.controlCharacters.contains)
+    else {
+      throw OpenRouterUsageClientError.invalidProviderResponse
+    }
+    return string
   }
 
   private static func add(_ value: Int, to total: inout Int) throws {
@@ -1045,13 +1280,14 @@ enum OpenRouterUsageClientError: LocalizedError {
   case invalidGenerationID
   case invalidProviderResponse
   case analyticsMetadataUnavailable
+  case recentCallsUnavailable
 
   var errorDescription: String? {
     switch self {
     case .missingAPIKey:
       "Connect an OpenRouter API key before checking its limit."
     case .missingManagementKey:
-      "Enter an OpenRouter management key for this advanced check."
+      "Enter an OpenRouter management key to check the whole account."
     case .invalidAuthorizationCode:
       "OpenRouter returned an invalid authorization code. Start a new connection."
     case .invalidCodeVerifier:
@@ -1064,6 +1300,8 @@ enum OpenRouterUsageClientError: LocalizedError {
       "OpenRouter returned an unsupported response."
     case .analyticsMetadataUnavailable:
       "OpenRouter did not publish a usable analytics metric for this query."
+    case .recentCallsUnavailable:
+      "OpenRouter did not publish the generation analytics needed for recent call metadata."
     }
   }
 }

@@ -104,6 +104,7 @@ git status --short -- .
 - snapshot 到摘要与类型化详情卡片的投影；返回窗口优先、credit-only 不虚构窗口、OpenRouter 重复 balance/window 去重、negative remaining 保留。只有 percentage 或可验证 numerator/positive denominator 才生成 progress，未知 denominator 不退化为 `0%`。
 - 安全 JSON 数值/布尔/日期转换；非有限值、错误类型和过大整数 fail closed。
 - endpoint policy 拒绝非 HTTPS、错误端口、lookalike host、embedded credentials、fragment、trailing slash、dot segment、重复/未知 query、错误 method/content type/body。
+- OpenRouter generation analytics policy 要求 `generation_id`、最多 2 个 dimensions、hour/day granularity、`group_limit: 1`、最多 31 天和最多 50 行；generation ID 作为有界、无控制字符的 opaque value 处理，不能把官方示例中的 `gen-` 当 schema 前缀；`/generation/content` 必须保持拒绝。
 - ephemeral HTTP client 拒绝 redirect、限制 response size，只对幂等请求执行有限 retry。
 - PKCE verifier/challenge 格式与 loopback callback 约束。
 
@@ -135,6 +136,11 @@ git status --short -- .
 
 ### OpenRouter
 
+- Store 默认必须是 `Account` mode；未输入 management key 时 Dashboard 主动作是 `Set up account` 并进入 OpenRouter 详情，输入后才变成 `Check whole account`。切换 `Single key` 后才允许发起会创建普通 key 的 OAuth flow。
+- 账户 snapshot 的 `/activity` 请求不得带 `api_key_hash`/`user_id`，analytics query 不得静默添加 filters；账户 credits/activity/analytics 继续保持 management-key scope。
+- Recent-call query 必须通过 meta 选择 `generation_id`、最多一个 key/model 辅助 dimension、一个 cost/usage metric 和一个 token metric；请求固定无 filters/order_by、显式 1–30 天窗口、`group_limit: 1` 且 UI limit 为 20。
+- Recent-call decoder 必须验证 generation ID、有限且非负的数值、整数 token、metadata row count/truncated、去重与冲突重复；非法行 fail closed。
+- Recent-call loading/error/result 必须与账户 snapshot 分离：列表失败保留账户余额；recent-call 窗口变化必须清掉旧列表；management key 变化、mode switch 或 Clear 后旧列表和旧 snapshot 都不能恢复。测试必须用可控延迟响应覆盖 account check 期间 Clear 与 recent-call query 期间 mode switch。
 - `/key` 直接 `limit_remaining` 与负值；credits 的负 `total_credits - total_usage`。
 - OAuth 授权参数不包含未被官方契约定义的 state；随机 callback path + PKCE 的约束。
 - activity/generation 的 `total_tokens` 优先；fallback 只用 prompt + completion，reasoning 不重复相加。
@@ -185,10 +191,12 @@ git status --short -- .
 
 ### OpenRouter
 
-- 默认 OAuth mode 在系统默认浏览器打开 OpenRouter，随机 localhost callback 授权后显示 `/api/v1/key` limit/usage/remaining。
-- 取消/拒绝/超时、key 过期或 HTTP 401/403 时显示净化错误并要求重新连接。
-- Clear 取消本地 listener并清 session key/snapshot；若浏览器端可能已创建 key，去 OpenRouter 官方账户页面 revoke。
-- Management mode 只有用户显式提供 management key 后才查询 credits/activity/meta/query 与可选 generation；key 不持久化。
+- 默认 `Account` mode 在 Dashboard 先显示 `Set up account` 并进入 session-only management key 输入页；输入后显示 `Check whole account`，成功后主卡显示账户 credits remaining，而不是任一普通 key 的 `limit_remaining`。
+- Account mode 不创建推理 key，并查询账户级 credits、无单-key过滤的聚合 activity、meta/query analytics 与可选 generation；management key 不持久化，Dashis 不调用 key 管理写接口。
+- `/activity` 的行数必须标为 groups/聚合，不得显示成逐调用 logs；Analytics options 默认折叠。
+- 账户检查成功后，`Recent calls · metadata only` 可按 1–30 天加载最多 20 条 analytics 行；不得显示 prompt/response，截断时必须明确警告，列表失败不能清掉余额。
+- 切换 `Single key` 后才在系统默认浏览器打开 OpenRouter OAuth；随机 localhost callback 授权后显示 `/api/v1/key` limit/usage/remaining。取消/拒绝/超时、key 过期或 HTTP 401/403 时显示净化错误。
+- Single-key Clear 取消本地 listener并清 session key/snapshot；若浏览器端可能已创建 key，去 OpenRouter 官方账户页面 revoke。Account Clear 只清内存中的 management key、snapshot 和 recent-call metadata。
 - negative remaining 如实显示；reasoning 只显示 breakdown；rate metric 不求和；analytics truncated 时自动缩窗重试一次并显示实际口径。
 - 任一子请求失败时，其它成功结果仍显示，并列出 partial failure。
 

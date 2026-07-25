@@ -43,6 +43,25 @@ private final class SyntheticProviderURLProtocol: URLProtocol {
   override func stopLoading() {}
 }
 
+private func syntheticRequestBody(_ request: URLRequest) -> Data? {
+  if let body = request.httpBody { return body }
+  guard let stream = request.httpBodyStream else { return nil }
+  stream.open()
+  defer { stream.close() }
+  var data = Data()
+  var buffer = [UInt8](repeating: 0, count: 4_096)
+  while true {
+    let count = stream.read(&buffer, maxLength: buffer.count)
+    if count > 0 {
+      data.append(buffer, count: count)
+    } else if count == 0 {
+      return data
+    } else {
+      return nil
+    }
+  }
+}
+
 final class SecurityBoundaryTests: XCTestCase {
   func testProviderJSONDistinguishesBooleanAndNumericNSNumberBridges() {
     XCTAssertEqual(ProviderJSON.bool(true), true)
@@ -261,6 +280,226 @@ final class SecurityBoundaryTests: XCTestCase {
     XCTAssertTrue(snapshot.hasData)
     XCTAssertTrue(snapshot.partialFailures.contains { $0.operation == "openrouter.activity" })
     XCTAssertTrue(snapshot.partialFailures.contains { $0.operation == "openrouter.analytics.meta" })
+  }
+
+  func testOpenRouterAccountSnapshotUsesUnfilteredAccountQueries() async throws {
+    SyntheticProviderURLProtocol.install { request in
+      switch request.url?.path {
+      case "/api/v1/credits":
+        return (200, ["Content-Type": "application/json"], Data(#"{"data":{"total_credits":20,"total_usage":4}}"#.utf8))
+      case "/api/v1/activity":
+        XCTAssertNil(request.url?.query)
+        return (200, ["Content-Type": "application/json"], Data(#"{"data":[]}"#.utf8))
+      case "/api/v1/analytics/meta":
+        let body = #"{"data":{"metrics":[{"name":"request_count","is_rate":false}],"dimensions":[{"name":"model"}],"granularities":[{"name":"day"}]}}"#
+        return (200, ["Content-Type": "application/json"], Data(body.utf8))
+      case "/api/v1/analytics/query":
+        let body = syntheticRequestBody(request)
+          .flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
+        XCTAssertNil(body?["filters"])
+        let response = #"{"data":{"data":[],"metadata":{"row_count":0,"truncated":false}}}"#
+        return (200, ["Content-Type": "application/json"], Data(response.utf8))
+      default:
+        return (404, [:], Data())
+      }
+    }
+    let client = ProviderHTTPClient(configuration: syntheticSessionConfiguration(), maximumRetries: 0)
+    let snapshot = await OpenRouterUsageClient(
+      httpClient: client,
+      now: { Date(timeIntervalSince1970: 1_800_000_000) }
+    ).fetchManagementSnapshot(context: .init(apiKey: "sk-or-synthetic"))
+
+    XCTAssertEqual(snapshot.scope, .workspace("OpenRouter account"))
+    XCTAssertEqual(snapshot.balance?.remaining, 16)
+    XCTAssertTrue(snapshot.partialFailures.isEmpty)
+  }
+
+  func testOpenRouterRecentCallsUsesAccountWideMetadataQuery() async throws {
+    SyntheticProviderURLProtocol.install { request in
+      switch request.url?.path {
+      case "/api/v1/analytics/meta":
+        let body = #"{"data":{"metrics":[{"name":"total_usage","is_rate":false},{"name":"tokens_total","is_rate":false},{"name":"requests_per_second","is_rate":true}],"dimensions":[{"name":"generation_id"},{"name":"api_key_id"},{"name":"model"}],"granularities":[{"name":"hour"}]}}"#
+        return (200, ["Content-Type": "application/json"], Data(body.utf8))
+      case "/api/v1/analytics/query":
+        let body = syntheticRequestBody(request)
+          .flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
+        XCTAssertEqual(body?["dimensions"] as? [String], ["generation_id", "api_key_id"])
+        XCTAssertEqual(body?["metrics"] as? [String], ["total_usage", "tokens_total"])
+        XCTAssertEqual(body?["granularity"] as? String, "hour")
+        XCTAssertEqual(ProviderJSON.int(body?["group_limit"]), 1)
+        XCTAssertEqual(ProviderJSON.int(body?["limit"]), 20)
+        XCTAssertNil(body?["filters"])
+        XCTAssertNil(body?["order_by"])
+        let timeRange = body?["time_range"] as? [String: Any]
+        let start = ProviderJSON.date(timeRange?["start"])
+        let end = ProviderJSON.date(timeRange?["end"])
+        if let start, let end {
+          XCTAssertEqual(end.timeIntervalSince(start), 86_400, accuracy: 0.001)
+        } else {
+          XCTFail("Expected an explicit recent-calls time range")
+        }
+        let response = #"{"data":{"data":[{"generation_id":"gen-synthetic","api_key_id":"account-key","date__hour":"2027-01-15T07:00:00Z","total_usage":"0.01","tokens_total":"50"}],"metadata":{"row_count":1,"truncated":false}}}"#
+        return (200, ["Content-Type": "application/json"], Data(response.utf8))
+      default:
+        return (404, [:], Data())
+      }
+    }
+    let client = ProviderHTTPClient(configuration: syntheticSessionConfiguration(), maximumRetries: 0)
+    let page = try await OpenRouterUsageClient(
+      httpClient: client,
+      now: { Date(timeIntervalSince1970: 1_800_000_000) }
+    ).fetchRecentCalls(apiKey: "sk-or-synthetic")
+
+    XCTAssertEqual(page.calls.map(\.id), ["gen-synthetic"])
+    XCTAssertEqual(page.calls.first?.apiKeyLabel, "account-key")
+    XCTAssertEqual(page.calls.first?.totalTokens, 50)
+  }
+
+  @MainActor
+  func testOpenRouterPrimaryAccountFlowKeepsBalanceWhenRecentCallsFail() async {
+    SyntheticProviderURLProtocol.install { request in
+      XCTAssertNotEqual(request.url?.path, "/api/v1/auth/keys")
+      switch request.url?.path {
+      case "/api/v1/credits":
+        return (200, ["Content-Type": "application/json"], Data(#"{"data":{"total_credits":20,"total_usage":4}}"#.utf8))
+      case "/api/v1/activity":
+        return (200, ["Content-Type": "application/json"], Data(#"{"data":[]}"#.utf8))
+      case "/api/v1/analytics/meta":
+        let body = #"{"data":{"metrics":[{"name":"request_count","is_rate":false}],"dimensions":[{"name":"model"}],"granularities":[{"name":"day"}]}}"#
+        return (200, ["Content-Type": "application/json"], Data(body.utf8))
+      case "/api/v1/analytics/query":
+        let body = #"{"data":{"data":[],"metadata":{"row_count":0,"truncated":false}}}"#
+        return (200, ["Content-Type": "application/json"], Data(body.utf8))
+      default:
+        return (404, [:], Data())
+      }
+    }
+    let client = ProviderHTTPClient(configuration: syntheticSessionConfiguration(), maximumRetries: 0)
+    let store = DashisProviderStore(service: DashisProviderService(httpClient: client))
+    store.openRouterManagementAPIKey = "sk-or-synthetic"
+
+    await store.runPrimaryCheck(for: ProviderID.openRouter.rawValue)
+    XCTAssertEqual(store.snapshots[.openRouter]?.balance?.remaining, 16)
+    XCTAssertTrue(store.canLoadOpenRouterRecentCalls)
+
+    await store.loadOpenRouterRecentCalls()
+    if case .failed = store.openRouterRecentCallsState {
+      // Expected: this synthetic account does not publish generation_id analytics.
+    } else {
+      XCTFail("Expected recent-call metadata to fail independently")
+    }
+    XCTAssertEqual(store.snapshots[.openRouter]?.balance?.remaining, 16)
+
+    SyntheticProviderURLProtocol.install { request in
+      switch request.url?.path {
+      case "/api/v1/analytics/meta":
+        let body = #"{"data":{"metrics":[{"name":"total_usage","is_rate":false}],"dimensions":[{"name":"generation_id"}],"granularities":[{"name":"hour"}]}}"#
+        return (200, ["Content-Type": "application/json"], Data(body.utf8))
+      case "/api/v1/analytics/query":
+        let body = #"{"data":{"data":[{"generation_id":"gen-window","date__hour":"2027-01-15T07:00:00Z","total_usage":0.01}],"metadata":{"row_count":1,"truncated":false}}}"#
+        return (200, ["Content-Type": "application/json"], Data(body.utf8))
+      default:
+        return (404, [:], Data())
+      }
+    }
+    await store.loadOpenRouterRecentCalls()
+    if case .loaded(let page) = store.openRouterRecentCallsState {
+      XCTAssertEqual(page.calls.map(\.id), ["gen-window"])
+    } else {
+      XCTFail("Expected a loaded recent-call page")
+    }
+    store.openRouterRecentCallsDays = 2
+    XCTAssertEqual(store.openRouterRecentCallsState, .idle)
+    XCTAssertEqual(store.snapshots[.openRouter]?.balance?.remaining, 16)
+
+    store.openRouterManagementAPIKey = "sk-or-other-synthetic"
+    XCTAssertNil(store.snapshots[.openRouter])
+    XCTAssertFalse(store.canLoadOpenRouterRecentCalls)
+  }
+
+  @MainActor
+  func testOpenRouterLateAccountAndRecentCallResponsesCannotRestoreClearedState() async {
+    let creditsStarted = expectation(description: "Delayed account credits request started")
+    let releaseCredits = DispatchSemaphore(value: 0)
+    SyntheticProviderURLProtocol.install { request in
+      switch request.url?.path {
+      case "/api/v1/credits":
+        creditsStarted.fulfill()
+        _ = releaseCredits.wait(timeout: .now() + 5)
+        return (200, ["Content-Type": "application/json"], Data(#"{"data":{"total_credits":20,"total_usage":4}}"#.utf8))
+      case "/api/v1/activity":
+        return (200, ["Content-Type": "application/json"], Data(#"{"data":[]}"#.utf8))
+      case "/api/v1/analytics/meta":
+        let body = #"{"data":{"metrics":[{"name":"request_count","is_rate":false}],"dimensions":[{"name":"model"}],"granularities":[{"name":"day"}]}}"#
+        return (200, ["Content-Type": "application/json"], Data(body.utf8))
+      case "/api/v1/analytics/query":
+        let body = #"{"data":{"data":[],"metadata":{"row_count":0,"truncated":false}}}"#
+        return (200, ["Content-Type": "application/json"], Data(body.utf8))
+      default:
+        return (404, [:], Data())
+      }
+    }
+    let client = ProviderHTTPClient(configuration: syntheticSessionConfiguration(), maximumRetries: 0)
+    let store = DashisProviderStore(service: DashisProviderService(httpClient: client))
+    store.openRouterManagementAPIKey = "sk-or-delayed-account"
+    let accountTask = Task { await store.checkOpenRouterAccount() }
+
+    await fulfillment(of: [creditsStarted], timeout: 2)
+    store.clearOpenRouterSession()
+    releaseCredits.signal()
+    await accountTask.value
+
+    XCTAssertNil(store.snapshots[.openRouter])
+    XCTAssertEqual(store.openRouterRecentCallsState, .idle)
+    XCTAssertTrue(store.openRouterManagementAPIKey.isEmpty)
+
+    SyntheticProviderURLProtocol.install { request in
+      switch request.url?.path {
+      case "/api/v1/credits":
+        return (200, ["Content-Type": "application/json"], Data(#"{"data":{"total_credits":20,"total_usage":4}}"#.utf8))
+      case "/api/v1/activity":
+        return (200, ["Content-Type": "application/json"], Data(#"{"data":[]}"#.utf8))
+      case "/api/v1/analytics/meta":
+        let body = #"{"data":{"metrics":[{"name":"request_count","is_rate":false}],"dimensions":[{"name":"model"}],"granularities":[{"name":"day"}]}}"#
+        return (200, ["Content-Type": "application/json"], Data(body.utf8))
+      case "/api/v1/analytics/query":
+        let body = #"{"data":{"data":[],"metadata":{"row_count":0,"truncated":false}}}"#
+        return (200, ["Content-Type": "application/json"], Data(body.utf8))
+      default:
+        return (404, [:], Data())
+      }
+    }
+    store.openRouterManagementAPIKey = "sk-or-delayed-recent"
+    await store.checkOpenRouterAccount()
+    XCTAssertEqual(store.snapshots[.openRouter]?.balance?.remaining, 16)
+
+    let recentQueryStarted = expectation(description: "Delayed recent-call query started")
+    let releaseRecentQuery = DispatchSemaphore(value: 0)
+    SyntheticProviderURLProtocol.install { request in
+      switch request.url?.path {
+      case "/api/v1/analytics/meta":
+        let body = #"{"data":{"metrics":[{"name":"total_usage","is_rate":false}],"dimensions":[{"name":"generation_id"}],"granularities":[{"name":"hour"}]}}"#
+        return (200, ["Content-Type": "application/json"], Data(body.utf8))
+      case "/api/v1/analytics/query":
+        recentQueryStarted.fulfill()
+        _ = releaseRecentQuery.wait(timeout: .now() + 5)
+        let body = #"{"data":{"data":[{"generation_id":"gen-late","date__hour":"2027-01-15T07:00:00Z","total_usage":0.01}],"metadata":{"row_count":1,"truncated":false}}}"#
+        return (200, ["Content-Type": "application/json"], Data(body.utf8))
+      default:
+        return (404, [:], Data())
+      }
+    }
+    let recentTask = Task { await store.loadOpenRouterRecentCalls() }
+
+    await fulfillment(of: [recentQueryStarted], timeout: 2)
+    store.openRouterMode = .singleKey
+    releaseRecentQuery.signal()
+    await recentTask.value
+
+    XCTAssertEqual(store.openRouterMode, .singleKey)
+    XCTAssertNil(store.snapshots[.openRouter])
+    XCTAssertEqual(store.openRouterRecentCallsState, .idle)
+    XCTAssertTrue(store.openRouterManagementAPIKey.isEmpty)
   }
 
   func testEmbeddedClaudeHelperForwardsStdinStdoutAndExitStatus() throws {

@@ -42,6 +42,15 @@ enum ProviderEndpointPolicy {
     return trimmed
   }
 
+    static func isOpenRouterGenerationID(_ value: String) -> Bool {
+        let bytes = value.utf8
+        return value != "."
+            && value != ".."
+            && !bytes.isEmpty
+            && bytes.count <= 512
+            && bytes.allSatisfy { (0x21...0x7E).contains($0) }
+    }
+
   private static func allowsCodexDesktop(url: URL, method: String, body: Data?) -> Bool {
     method == "GET"
       && body == nil
@@ -116,7 +125,7 @@ enum ProviderEndpointPolicy {
       guard request.httpBody == nil else { return false }
       return validateQuery(url, allowedNames: ["id"], requiredNames: ["id"]) { item in
         guard let value = item.value else { return false }
-        return sanitizeIdentifier(value) == value
+        return isOpenRouterGenerationID(value)
       }
     default:
       return false
@@ -228,7 +237,7 @@ enum ProviderEndpointPolicy {
   private static func validOpenRouterAnalyticsBody(_ data: Data?) -> Bool {
     guard let object = jsonDictionary(data) else { return false }
     let required: Set<String> = ["metrics", "limit", "time_range"]
-    let allowed = required.union(["dimensions", "granularity"])
+    let allowed = required.union(["dimensions", "granularity", "group_limit"])
     guard required.isSubset(of: Set(object.keys)),
           Set(object.keys).isSubset(of: allowed),
           let metrics = object["metrics"] as? [String],
@@ -247,17 +256,58 @@ enum ProviderEndpointPolicy {
     else {
       return false
     }
-    if let dimensions = object["dimensions"] as? [String] {
-      guard dimensions.count <= 16, dimensions.allSatisfy(safeAnalyticsName) else { return false }
+    let dimensions: [String]
+    if let rawDimensions = object["dimensions"] as? [String] {
+      guard rawDimensions.count <= 2, rawDimensions.allSatisfy(safeAnalyticsName) else { return false }
+      dimensions = rawDimensions
     } else if object["dimensions"] != nil {
       return false
+    } else {
+      dimensions = []
     }
-    if let granularity = object["granularity"] as? String {
-      guard ["hour", "day", "week"].contains(granularity) else { return false }
+    let granularity: String?
+    if let rawGranularity = object["granularity"] as? String {
+      guard ["hour", "day", "week"].contains(rawGranularity) else { return false }
+      granularity = rawGranularity
     } else if object["granularity"] != nil {
+      return false
+    } else {
+      granularity = nil
+    }
+    let groupLimit: Int?
+    if let rawGroupLimit = object["group_limit"] {
+      guard let parsed = ProviderJSON.int(rawGroupLimit), (1...1_000).contains(parsed) else {
+        return false
+      }
+      groupLimit = parsed
+    } else {
+      groupLimit = nil
+    }
+    if dimensions.contains("generation_id") {
+      let allowedGenerationMetrics: Set<String> = [
+        "total_usage", "usage", "tokens_total", "total_tokens", "request_count"
+      ]
+      guard dimensions.first == "generation_id",
+            Set(dimensions).count == dimensions.count,
+            dimensions.dropFirst().allSatisfy({ ["api_key_id", "model"].contains($0) }),
+            requestedNamesAreUnique(metrics),
+            metrics.count <= 2,
+            metrics.allSatisfy(allowedGenerationMetrics.contains),
+            groupLimit == 1,
+            limit <= 50,
+            granularity == "hour" || granularity == "day",
+            end.timeIntervalSince(start) <= 31 * 86_400
+      else {
+        return false
+      }
+    } else if groupLimit != nil {
       return false
     }
     return true
+  }
+
+  private static func requestedNamesAreUnique(_ names: [String]) -> Bool {
+    Set(names).count == names.count
   }
 
   private static func validGoogleTokenBody(_ data: Data?) -> Bool {
