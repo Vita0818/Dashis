@@ -6,7 +6,7 @@ struct DashisSidebar: View {
   @Binding var selectionID: String
 
   var body: some View {
-    List {
+    List(selection: selection) {
       Section {
         brand
           .listRowSeparator(.hidden)
@@ -15,26 +15,25 @@ struct DashisSidebar: View {
       }
 
       Section {
-        navigationRow(
-          title: "Dashboard",
-          symbolName: "rectangle.3.group",
-          id: DashisSelection.dashboard
-        )
-        .padding(.bottom, 29)
-        .offset(x: 5, y: 4)
+        navigationLabel("Dashboard")
+          .tag(DashisSelection.dashboard)
 
-        ForEach(providers) { provider in
-          navigationRow(
-            title: provider.name,
-            symbolName: provider.symbolName,
-            id: provider.id
-          )
-          .padding(.vertical, 9)
-          .offset(x: 5)
+        navigationLabel("Settings")
+          .tag(DashisSelection.settings)
+      }
+
+      if !providers.isEmpty {
+        Section("Providers") {
+          ForEach(providers) { provider in
+            navigationLabel(provider.name)
+              .help(provider.name)
+              .tag(provider.id)
+          }
         }
       }
     }
     .listStyle(.sidebar)
+    .id("dashis.primary-sidebar.vertical-layout.v1")
   }
 
   private var brand: some View {
@@ -42,38 +41,28 @@ struct DashisSidebar: View {
       .font(DashisType.brand(28))
       .foregroundStyle(DashisTheme.primaryText(colorScheme))
       .frame(maxWidth: .infinity, alignment: .leading)
+      .accessibilityAddTraits(.isHeader)
   }
 
-  private func navigationRow(
-    title: String,
-    symbolName: String,
-    id: String
-  ) -> some View {
-    Button {
-      selectionID = id
-    } label: {
-      Label(title, systemImage: symbolName)
-        .font(DashisType.navigation())
-        .foregroundStyle(DashisTheme.primaryText(colorScheme))
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .contentShape(Rectangle())
-    }
-    .buttonStyle(.plain)
-    .listRowBackground(
-      RoundedRectangle(cornerRadius: 7, style: .continuous)
-        .fill(selectionID == id ? DashisTheme.accent.opacity(0.14) : .clear)
-        .overlay {
-          RoundedRectangle(cornerRadius: 7, style: .continuous)
-            .stroke(
-              selectionID == id ? DashisTheme.accent.opacity(0.32) : .clear,
-              lineWidth: 1
-            )
+  private func navigationLabel(_ title: String) -> some View {
+    Text(title)
+      .lineLimit(1)
+      .truncationMode(.tail)
+      .frame(
+        minWidth: 0,
+        maxWidth: .infinity,
+        alignment: .leading
+      )
+  }
+
+  private var selection: Binding<String?> {
+    Binding(
+      get: { selectionID },
+      set: { newValue in
+        if let newValue {
+          selectionID = newValue
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 2)
+      }
     )
-    .accessibilityAddTraits(selectionID == id ? .isSelected : [])
-    .accessibilityLabel(title)
-    .accessibilityValue(selectionID == id ? "Selected" : "")
   }
 }

@@ -1,0 +1,75 @@
+{
+  "": {
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/primary.swiftdeps"
+  },
+  "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/Sources/DashisCollectorContract/CollectorHostBroker.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorHostBroker.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorHostBroker.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorHostBroker~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorHostBroker.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorHostBroker.dia"
+  },
+  "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/Sources/DashisCollectorContract/CollectorLiveRouteCatalog.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorLiveRouteCatalog.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorLiveRouteCatalog.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorLiveRouteCatalog~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorLiveRouteCatalog.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorLiveRouteCatalog.dia"
+  },
+  "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/Sources/DashisCollectorContract/CollectorOutcome.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorOutcome.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorOutcome.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorOutcome~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorOutcome.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorOutcome.dia"
+  },
+  "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/Sources/DashisCollectorContract/CollectorPolicy.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorPolicy.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorPolicy.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorPolicy~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorPolicy.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorPolicy.dia"
+  },
+  "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/Sources/DashisCollectorContract/CollectorRequest.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorRequest.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorRequest.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorRequest~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorRequest.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorRequest.dia"
+  },
+  "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/Sources/DashisCollectorContract/CollectorRolloutCatalog.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorRolloutCatalog.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorRolloutCatalog.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorRolloutCatalog~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorRolloutCatalog.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorRolloutCatalog.dia"
+  },
+  "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/Sources/DashisCollectorContract/CollectorValue.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorValue.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorValue.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorValue~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorValue.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorValue.dia"
+  },
+  "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/Sources/DashisCollectorContract/CollectorWireCodec.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorWireCodec.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorWireCodec.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorWireCodec~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorWireCodec.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorWireCodec.dia"
+  },
+  "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/Sources/DashisCollectorContract/CollectorWireEnvelope.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorWireEnvelope.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorWireEnvelope.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorWireEnvelope~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorWireEnvelope.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorWireEnvelope.dia"
+  },
+  "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/Sources/DashisCollectorContract/CollectorXPCProtocol.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorXPCProtocol.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorXPCProtocol.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorXPCProtocol~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorXPCProtocol.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCollectorContract.build/CollectorXPCProtocol.dia"
+  }
+}

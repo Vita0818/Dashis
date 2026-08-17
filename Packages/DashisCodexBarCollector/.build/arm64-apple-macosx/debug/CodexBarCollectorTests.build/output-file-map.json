@@ -1,0 +1,19 @@
+{
+  "": {
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollectorTests.build/primary.swiftdeps"
+  },
+  "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/Tests/CodexBarCollectorTests/CodexBarCollectorTests.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollectorTests.build/CodexBarCollectorTests.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollectorTests.build/CodexBarCollectorTests.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollectorTests.build/CodexBarCollectorTests~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollectorTests.build/CodexBarCollectorTests.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollectorTests.build/CodexBarCollectorTests.dia"
+  },
+  "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/Tests/CodexBarCollectorTests/CollectorWireContractTests.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollectorTests.build/CollectorWireContractTests.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollectorTests.build/CollectorWireContractTests.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollectorTests.build/CollectorWireContractTests~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollectorTests.build/CollectorWireContractTests.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollectorTests.build/CollectorWireContractTests.dia"
+  }
+}

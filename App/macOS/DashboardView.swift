@@ -1,25 +1,25 @@
 import SwiftUI
 
 struct DashboardView: View {
-  @Environment(\.colorScheme) private var colorScheme
   @SceneStorage("dashis.selectedView") private var selectedViewID = DashisSelection.dashboard
   @StateObject private var store = DashisProviderStore()
 
   var body: some View {
     NavigationSplitView {
       DashisSidebar(
-        providers: store.providers,
+        providers: store.visibleProviders,
         selectionID: $selectedViewID
       )
-      .navigationSplitViewColumnWidth(min: 176, ideal: 218)
+      .navigationSplitViewColumnWidth(
+        min: DashisWindowLayout.primarySidebarWidth,
+        ideal: DashisWindowLayout.primarySidebarWidth,
+        max: DashisWindowLayout.primarySidebarWidth
+      )
     } detail: {
       DashisDashboardDetail(
         selectedID: $selectedViewID,
         store: store
       )
-      .frame(maxWidth: .infinity, maxHeight: .infinity)
-      .background(DashisTheme.page(colorScheme).ignoresSafeArea())
-      .navigationTitle("")
     }
     .onAppear {
 #if DEBUG
@@ -30,12 +30,17 @@ struct DashboardView: View {
 #endif
       if selectedViewID == DashisSelection.settings {
         selectedViewID = DashisSelection.dashboard
+        return
       }
+      selectedViewID = store.normalizedDisplaySelection(selectedViewID)
     }
   }
 }
 
 #Preview {
   DashboardView()
-    .frame(width: 1280, height: 860)
+    .frame(
+      width: DashisWindowLayout.defaultWidth,
+      height: DashisWindowLayout.defaultHeight
+    )
 }

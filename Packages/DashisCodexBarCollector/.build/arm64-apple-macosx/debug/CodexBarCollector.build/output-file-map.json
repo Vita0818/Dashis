@@ -1,0 +1,47 @@
+{
+  "": {
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/primary.swiftdeps"
+  },
+  "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/Sources/CodexBarCollector/CodexBarArtifactMapper.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/CodexBarArtifactMapper.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/CodexBarArtifactMapper.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/CodexBarArtifactMapper~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/CodexBarArtifactMapper.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/CodexBarArtifactMapper.dia"
+  },
+  "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/Sources/CodexBarCollector/CodexBarCollector.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/CodexBarCollector.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/CodexBarCollector.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/CodexBarCollector~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/CodexBarCollector.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/CodexBarCollector.dia"
+  },
+  "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/Sources/CodexBarCollector/CodexBarHostConfiguration.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/CodexBarHostConfiguration.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/CodexBarHostConfiguration.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/CodexBarHostConfiguration~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/CodexBarHostConfiguration.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/CodexBarHostConfiguration.dia"
+  },
+  "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/Sources/CodexBarCollector/CodexBarResultMapper.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/CodexBarResultMapper.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/CodexBarResultMapper.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/CodexBarResultMapper~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/CodexBarResultMapper.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/CodexBarResultMapper.dia"
+  },
+  "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/Sources/CodexBarCollector/CodexBarTypeMapping.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/CodexBarTypeMapping.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/CodexBarTypeMapping.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/CodexBarTypeMapping~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/CodexBarTypeMapping.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/CodexBarTypeMapping.dia"
+  },
+  "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/Sources/CodexBarCollector/CollectorConfiguration.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/CollectorConfiguration.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/CollectorConfiguration.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/CollectorConfiguration~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/CollectorConfiguration.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarCollector.build/CollectorConfiguration.dia"
+  }
+}

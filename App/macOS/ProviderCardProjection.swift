@@ -47,15 +47,17 @@ enum ProviderVisualizationProjection {
       .filter { $0.key != "reset_credits" }
       .map { metricCard($0, freshness: freshness, historical: historical) }
 
-    let quotaCards = windowCards + balanceCards
     let primaryCards: [ProviderUsageCard]
     let additionalCards: [ProviderUsageCard]
-    if quotaCards.isEmpty {
-      primaryCards = Array(metricCards.prefix(4))
-      additionalCards = Array(metricCards.dropFirst(4))
+    if !windowCards.isEmpty {
+      primaryCards = Array(windowCards.prefix(2))
+      additionalCards = Array(windowCards.dropFirst(2)) + balanceCards + metricCards
+    } else if !balanceCards.isEmpty {
+      primaryCards = balanceCards
+      additionalCards = metricCards
     } else {
-      primaryCards = Array(quotaCards.prefix(4))
-      additionalCards = Array(quotaCards.dropFirst(4)) + metricCards
+      primaryCards = Array(metricCards.prefix(2))
+      additionalCards = Array(metricCards.dropFirst(2))
     }
 
     return ProviderVisualization(

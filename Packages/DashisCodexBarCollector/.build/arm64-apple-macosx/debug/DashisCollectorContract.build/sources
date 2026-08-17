@@ -1,0 +1,10 @@
+/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/Sources/DashisCollectorContract/CollectorHostBroker.swift
+/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/Sources/DashisCollectorContract/CollectorLiveRouteCatalog.swift
+/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/Sources/DashisCollectorContract/CollectorOutcome.swift
+/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/Sources/DashisCollectorContract/CollectorPolicy.swift
+/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/Sources/DashisCollectorContract/CollectorRequest.swift
+/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/Sources/DashisCollectorContract/CollectorRolloutCatalog.swift
+/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/Sources/DashisCollectorContract/CollectorValue.swift
+/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/Sources/DashisCollectorContract/CollectorWireCodec.swift
+/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/Sources/DashisCollectorContract/CollectorWireEnvelope.swift
+/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/Sources/DashisCollectorContract/CollectorXPCProtocol.swift

@@ -5,9 +5,15 @@ struct DashisApp: App {
   var body: some Scene {
     WindowGroup {
       DashboardView()
-        .frame(minWidth: 1100, minHeight: 720)
+        .frame(
+          minWidth: DashisWindowLayout.minimumWidth,
+          minHeight: DashisWindowLayout.minimumHeight
+        )
     }
-    .defaultSize(width: 1280, height: 860)
+    .defaultSize(
+      width: DashisWindowLayout.defaultWidth,
+      height: DashisWindowLayout.defaultHeight
+    )
     .commands {
       CommandGroup(replacing: .newItem) {}
     }

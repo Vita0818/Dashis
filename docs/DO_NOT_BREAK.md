@@ -8,22 +8,28 @@
 - 未经用户明文要求具体 Git 操作，不 add、不 commit、不 push、不创建 PR；编辑、验证或准备工作不等于提交请求。
 - 若用户要求提交，只处理当前 Git root 中与任务相关的文件；不递归修改、暂存、提交或推送 submodule、nested Git repo 或依赖 checkout。
 - 不安装依赖、初始化新构建工具或修改 Vitemis 其它项目，除非用户明确要求。
-- 不删除或降级 `Dashis`、`ClaudeStatusLineHelper`、`DashisTests` target、shared `Dashis` scheme、App 对 helper 的依赖或 `Embed Claude Helper` build phase。
+- 不删除或降级 `Dashis`、`ClaudeStatusLineHelper`、`DashisCollectorWorker`、`DashisTests` target、shared `Dashis` scheme、App 对 helper/Worker 的依赖、`Embed Claude Helper` 或 XPC embed phase。
 - 不把 build 生成物写进仓库；DerivedData 继续使用系统临时目录或显式的临时路径。
+- `Vendor/CodexBarCore/Sources/CodexBarCore`、`Sources/CSQLite3` 与 `Sources/CodexBarClaudeWatchdog` 必须保持与固定 upstream commit 字节一致；不得直接打补丁。升级只能整体换 pin，并同步 `UPSTREAM.md`、`PATCHES.md`、依赖 lock、许可证和测试。
+- CodexBar 后台 build/transport 接线已经获批，但 module boundary 不得放宽：App target 只能链接 Foundation-only `DashisCollectorContract`；`CodexBarCollector` 与 `CodexBarCore` 只能链接 `DashisCollectorWorker`。不得让 Store/UI、既有 provider client 或其它 App source import Core/live collector。
+- SwiftPM build/test 的 scratch path 必须在系统临时目录；不得把 `.build`、dependency checkout、真实 config 或 probe dump 写入仓库。
 - iOS target 与共享代码边界尚未确认；不得提前把 `App/macOS` 移成跨平台共享层或声称已有 iOS 支持。
 
 ## 产品与 UI 禁区
 
 - 不把 Dashis 退回网页形式：不重新引入 `WKWebView`、Web dashboard 主入口、Node localhost gateway、React/Vite/Next 或静态 HTML/CSS/JS dashboard。
-- Dashboard 必须保持 provider-first：Sidebar 固定为 Dashboard、Codex、Claude、Google AI、OpenRouter；首页固定为四条内置 provider 摘要。没有实际偏好设置前，不恢复说明型 Settings 页面。摘要必须保持带分隔线的扁平列表，不能重新膨胀为嵌套卡片墙。
-- 不恢复动态 Add provider、自定义 session provider、旧 Models/Runs/Alerts、首页小指标网格、右侧 inspector-first、Recent monitors、timeline、装饰性品牌块或 marketing landing page。
-- 不把主题改成 Intatis 的香槟金、暖米色、紫蓝渐变、深蓝 slate 或其它非系统白/黑主色；语义色只表达状态。
-- 不得替换 Dashis 原有字体身份：品牌、页标题与主数值保持 macOS system serif，正文、控件与辅助信息保持 system sans；不得把普通正文改成 serif 或 monospace，代码/日志类内容才可局部使用 monospace。
-- 不得以“参考 Codex 网页”为由重写 Dashis 外壳。旧版外壳的硬约束是：品牌 28 pt serif、页标题 32 pt serif、Sidebar min 176 / ideal 218、导航约 14 pt serif 与约 40 pt 行距、浅蓝选中态、详情 horizontal 30 / top 26 / bottom 30 外边距及 14 pt 纵向 spacing；provider 内容最大宽度 900，外层最大宽度 1180。Codex 参考只允许影响信息层级与去重方式。
-- 空态摘要只保留 provider 名称、主值和一个动作；不得恢复 kind、正常 source/freshness、辅助统计、caption、进度或解释小字。真实来源风险、historical/stale/expired、warning、failure 与 exceeded 仍必须可辨认。
-- provider detail 无 snapshot 时不得显示占位明细或默认帮助段落；有 snapshot 时必须经类型化 projection 展示完整归一化窗口、warning 或 partial failure，而且同一份数据只展示一次，不能退回原始扁平 key/value 表。
-- provider detail 只为主要 quota/balance 或主 KPI 使用两列卡片；当前 App 最小布局下不得无故退化为单列，只有未来布局约束确实不足时才允许一列。额外 quota/metric 与 metadata 必须默认折叠；warning/failure 不套额外卡片，并各完整展示一次。
-- 不为 source/scope/observed、warning、failure 或每条普通 metadata 单独套卡片/边框，也不在 provider detail 同时复制完整 Dashboard 摘要。卡片内部不得重复同一数值的 used/limit/remaining 文案；只保留主值、descriptor、必要 reset/status 与可验证进度。
+- Dashboard 必须保持 provider-first：完整 reviewed 34-provider catalog 始终存在于 Settings 二级菜单；主 Sidebar 与 Dashboard 按 catalog 顺序显示用户通过 Settings 原生 switch 开启的子集，默认全部开启。除此之外不得通过 `isBuiltIn`、snapshot、freshness、loading 或采集状态自动隐藏任何 provider。关闭只改变两个展示入口，不能删除 provider、snapshot、配置、route、observation 或采集能力；Settings 中必须始终能重新开启。Codex、Claude、Gemini、OpenRouter 仍是四个 native 集成，其余 30 个仍走统一 `.collector` 集成。必须保留唯一顶层 `Settings` 入口，不得恢复重复的 `Providers` 页面或说明型/占位 Settings。
+- Sidebar 列表顶部必须保留 Dashis 原有品牌实现，不得再以“系统原生化”为由替换或删除：`Dashis` 使用 28 pt semibold Serif、原 vertical padding、`x: 7 / y: 9` 位置与品牌主文字色，Sidebar 的 min/ideal/max 必须同时保持 218 pt；品牌不可选择且不依赖可能被 toolbar 省略的 `navigationTitle`。
+- 不恢复动态 Add provider、自定义 session provider、旧 Models/Runs/Alerts、首页小指标网格、右侧 inspector-first、Recent monitors、timeline、额外品牌图标/subtitle/背景或 marketing landing page。受保护的 Serif 文本品牌本身不属于应删除的装饰噪声。
+- 不把主题改成 Intatis 的香槟金、暖米色、紫蓝渐变、深蓝 slate 或其它品牌色页面；页面、Sidebar、列表、表单、toolbar、搜索、选中态和普通文本颜色必须继续交给系统 semantic appearance，语义色只表达状态。
+- macOS 26/27 原生壳层是当前受保护的视觉契约：全窗口只能有一个默认样式的系统 `NavigationSplitView` 和 218 pt `.sidebar` `List(selection:)`。Settings detail 内使用固定 220 pt 的原生 `NSSearchField + .inset List + .switch Toggle` 面板、被动系统 `Divider`、`navigationTitle` 与 grouped `Form`；Dashboard 继续使用 `ScrollView` / `LazyVGrid` / `GroupBox`，其余控件继续使用系统 `Section`、`LabeledContent`、`ProgressView`、`Picker`、`DisclosureGroup`、`Menu` 与按钮。主 Sidebar 不放搜索。唯一品牌例外是上一条明确锁定的 Serif/位置/宽度；不得把 serif、手工 offset 或其它固定几何扩散到 provider 导航与普通正文，不得恢复定制浅蓝描边选中态、强制页面背景、自绘玻璃、自绘进度条或卡片阴影。代码/route ID 才可局部使用 monospace。
+- Settings 二级菜单不得使用第二个 `NavigationSplitView`、`NavigationStack`、`HSplitView` 或其它带独立 column visibility / toolbar toggle / 可拖动 divider 的导航容器；两张实际 1160 × 760 截图已经证明嵌套 split 会裁切主 List、折叠二级菜单并生成右上角恢复按钮。必须保持外层 detail 内零间距 `HStack`、固定 220 pt 面板、原生 `NSSearchField`、系统 `.inset` List、被动 `Divider` 和可伸缩 Form。主 Sidebar 必须维持 `218 / 218 / 218`；主/二级 List 的稳定 identity 不得删除或复用旧嵌套结构的 identity。provider 行不得用显式水平 spacing、非零最小 `Spacer`、额外左右 padding 或长名称固有宽度去撑开面板；名称必须单行、可压缩、尾部截断并保留 tooltip，switch 必须固定为系统尺寸。任何会改变这些结构、宽度或启动恢复页面的调整，都必须先做默认 1160 × 760 与最小 960 × 640 的前台窗口验收，不能仅凭编译通过接受。
+- 普通 provider 导航和 Dashboard 卡不得使用无法准确区分 provider 的 `network`、`cloud`、`terminal`、`globe` 等泛化图标、装饰性 chevron、连接 badge 或指标数量。只有 warning、failure 和更多操作等有明确状态/行为语义的位置可以保留系统 symbol。
+- Sidebar provider 行与 Dashboard provider 卡只能进入纯数据展示页，不得执行采集，也不得显示 Check、Connect、Configure、credential、method、consent、Clear 或 Advanced 控件。所有这些配置与动作必须只从顶层 `Settings` 进入，再经二级 provider 菜单找到；选择 Settings 中的 provider 本身也不得自动采集。
+- 一个页面同一状态只保留一个主要操作。检查/连接/重载等当前任务可用 bordered-prominent；`Clear` 只在确有本地状态时出现在更多操作菜单，不能与主操作争夺视觉优先级，也不能因此弱化原有确认、generation invalidation 或服务端 revoke 提示。
+- Dashboard 必须按 catalog 顺序保留当前开启 provider 的统一系统展示卡，并在内容宽度允许时双列、空间不足时单列；全部关闭时必须使用系统空态指向 Settings。不得退回只有 provider 名称和右侧摘要值的普通列表行，也不得恢复旧首页小指标卡墙。Dashboard 卡与 provider 展示页无 snapshot 时只能显示 provider 名称与诚实空态，不得伪造明细；四个 native provider 不得改走 CodexBar。展示页必须保持纯数据 `ScrollView`，不得嵌入 grouped Form 或任何设置 section。Settings 二级菜单必须持续显示完整 34 项及每项系统 switch；配置页必须在最大 900 pt 的 grouped `Form` 内使用真实系统 section 和对齐控件，不得把凭据、风险、按钮或全部配置塞进主卡。collector 常规层级保持 `Connection → Credentials（按需）→ Check Usage → Advanced`；不得恢复 method 说明、Access 重复行、凭据生命周期 footer、常驻风险卡、Advanced 运行说明或 Recent Calls 前置引导。高风险摘要必须只在点击主操作后的逐次确认对话框出现，不能删除 consent gate。native provider 按各自任务分组，但不得恢复常驻解释 footer。exact route/source/strategy 放入单一 `Advanced` disclosure，不得暴露 automatic-only strategy、任意环境变量输入或伪造 snapshot。有 snapshot 时必须经 `ProviderObservation → ProviderSnapshot` 类型化 projection 展示完整归一化窗口、warning 或 partial failure，而且同一份数据只展示一次。
+- Dashboard 每个 provider 和 provider 展示页都只使用一张系统 `GroupBox` 外层卡；不得在任一外层卡里再拆成两张或更多指标小卡。Dashboard 卡必须复用详情的类型化优先级，但只保留最多两个主 pane，不承载 metadata 或设置。订阅/限额型结果优先显示实际返回的主窗口；当 provider 实际提供 5-hour 与 7-day 时，这两个窗口必须优先，但不得凭字段名或计划硬编码伪造。余额/充值型结果在没有主窗口时必须把真实 balance 放在第一视觉层级。额外 quota/metric 与 metadata 只在详情主卡内默认折叠；warning/failure 在详情卡内各完整展示一次但不套额外 surface，Dashboard 仅保留必要异常限定。
+- 不为 source/scope/observed、warning、failure 或每条普通 metadata 单独套卡片/边框，也不在 provider 展示页同时复制完整 Dashboard 摘要。主卡内不得重复同一数值的 used/limit/remaining 文案；只保留主值、descriptor、必要 reset/status 与可验证的系统进度。主卡必须使用系统 `GroupBox`/`Divider`/`ProgressView`，不得加入自绘材质、固定颜色、描边或阴影来模拟 Liquid Glass。
 
 ## 统一数据语义禁区
 
@@ -36,7 +42,7 @@
 
 ## 网络与 endpoint 禁区
 
-- 所有 provider 远端请求必须经过 `ProviderHTTPClient` 与 `ProviderEndpointPolicy`；不得回退到 `URLSession.shared` 或为方便而放宽全局 host/path/query/body 验证。
+- 四个 native provider 的远端请求必须经过 Dashis `ProviderHTTPClient` 与 `ProviderEndpointPolicy`；不得回退到 `URLSession.shared` 或为方便而放宽全局 host/path/query/body 验证。collector route 运行在 Worker 中并使用 pinned CodexBar Core 自己的客户端，不能误称为已受 Dashis endpoint allowlist 逐请求代理。
 - 保持 ephemeral、no-cache、no-cookie、no-credential-store、8 MiB response cap 和 redirect 拒绝。OAuth/token POST 不自动重试；只有幂等 GET/HEAD 可在既有限制内重试一次。
 - 不允许非 HTTPS provider endpoint、非标准 HTTPS 端口、lookalike/subdomain host、embedded user/password、fragment、trailing slash、路径穿越、重复/未知 query 或未允许 body 字段。
 - 当前远端 allowlist 只能覆盖：
@@ -48,12 +54,40 @@
   - Google Monitoring：`GET https://monitoring.googleapis.com/v3/projects/{project}/timeSeries`，filter 只能是受支持的 `generativelanguage.googleapis.com/quota/.../{limit,usage}` metric。
 - 新 endpoint、method、query、scope 或 redirect 行为必须先有官方契约、安全评审、allowlist 测试和文档同步；不得只在 adapter 中拼 URL 绕过 policy。
 - 错误信息和诊断不得包含 Authorization、Bearer、key、OAuth code/state/verifier、账号 ID、完整请求/响应 body 或 provider 私有字段。
+- CodexBar Core 已进入独立 XPC Worker，41 条 live explicit route 已接入 30 个 collector provider，但这不代表 Core 网络已被 Dashis allowlist sandbox。每条 route 必须保持 exact source/strategy/manifest/pin/revision 与 observed-effect 风险摘要；任何新增或变化都要重新审查。不得把 reverse configuration broker 描述成 host HTTP、文件、Keychain、浏览器或 subprocess broker。
+
+## CodexBar/XPC 接线禁区
+
+- App 与 Worker 之间只能使用 `DashisCollectorContract` 的 wire-v4 Data envelope；不得跨 XPC 传 Core 对象、任意 NSSecureCoding object graph、credential handle 内容或原始 HTTP/HTML/body。request/response cap 必须保持 256 KiB/2 MiB，日期保持 Unix 毫秒，budget 保持 1–120000 ms。
+- release route 必须使用显式 source；`.auto`、未知 provider/source/strategy、缺失或不匹配的 upstream pin、route-manifest digest、live catalog revision 或 manifest-set digest 必须 fail closed。route digest 不得被误称为完整 effect manifest。
+- production Worker 必须保持 single-flight、重复 request-ID 拒绝和净化错误。当前事实是 30 个 collector provider、41 条 live explicit route；不得通过测试开关、隐藏配置、环境变量或 App 参数扩大 route 集合、改选未声明 strategy，或绕过 exact authorization。
+- `CollectorRolloutCatalog` 当前 revision 必须保持 34 个唯一 provider、52 条唯一 pinned strategy 和 50 条非 `.auto` binding；`CollectorLiveRouteCatalog` 必须保持排除四个 native provider 重叠路径后的 30 个 provider、41 条 route。wire-v4 handshake 必须在 App/Worker 两侧核对 live route count、revision 与 manifest-set digest；rollout inventory 不得直接替代 live authorization catalog。
+- `opencodego.local`、`kimi.cli`、`mimo.local` 当前只能经 upstream `.auto` planner 进入；不得为追求数量给它们伪造 `.cli`/`.api`/`.web` source。上游未提供 exact source binding 前必须保持不可路由。
+- `ProviderObservation` 是后台 canonical fact model；collector 成功结果必须先经过 outcome validator，再由 `ProviderObservationSnapshotProjection` 写入现有 `[ProviderID: ProviderSnapshot]`。启动 App、浏览 Dashboard/Sidebar、打开 provider 展示页、进入 Settings 或只选择二级 provider 都不得自动调用 runtime/XPC；只有用户在 Settings 中点击 `Check Usage` 才能执行一次所选 exact route。
+- `ProviderCollectionRuntime` 初始化不得发起 XPC、网络、HOME、Keychain、浏览器、CLI 或 Core probe；验证 wiring 必须由显式调用触发。
+- XPC connection invalidation 本身不是进程树硬终止。当前 Worker 另有 operation deadline：cooperative cancel、`collector.shutdown()`、2 秒 grace，以及 Worker 自有 process-group `SIGKILL` + `_exit(124)` 兜底；不得删除或弱化。该机制仍未证明能捕获所有自行脱离 process group 的后代，不能描述为完整进程树 sandbox，正式发布仍需补齐 PID/签名与 detached-child 验证。
+- Worker 是进程隔离，不是完整 OS sandbox。当前 App Sandbox 关闭；不得以 XPC 或“不进 App Store”为理由降低 endpoint、credential、文件、浏览器、Keychain、subprocess 与潜在费用审查。
+- 非 App Store release 必须让 App、Worker 与辅助 executable 使用同一 Developer ID、Hardened Runtime 和 notarization，并校验固定 bundle 路径、签名、Team ID 与版本；不得从 `$PATH`、任意用户目录或下载目录替换 Worker/Core。
+
+- Worker 必须为每次已授权 operation 新建只含一个 request rule、一个 planning rule 和一个 exact strategy rule 的 policy；其它 provider/source/strategy 必须继续 deny。不得用宽泛 `auto`、strategy kind 或跨请求复用 policy 代替 exact route 审查。
+- planning policy 必须在上游 resolver 前执行；strategy policy 必须在 `strategy.isAvailable` 与 `strategy.fetch` 前执行。被拒绝的 phase 不得继续触发其后的 Keychain、浏览器、HOME 文件、CLI 或网络 probe。
+- strategy kind 不得作为权限事实。当前逐操作 planning 与 strategy policy 必须保守要求完整 capability envelope；任何收窄都必须有 provider/source/runtime/strategy/credits/optional-usage 级源码证据和离线回归。
+- fetch 返回的 strategy ID/kind 必须与通过 exact policy 的顶层 strategy 完全一致；不一致必须 fail closed，不得用已授权 attempt 包装未授权 provenance。已授权 strategy 内部调用的 adapter 仍属于 opaque effect，不能声称已有递归 gate。
+- `CollectorOutcome` 必须保留 requested/resolved source、strategy/attempt、account resolution、raw percentage、window/reset、placeholder/usageKnown、confidence、credits、component timestamps、live-only artifacts、dashboard 与 sanitized diagnostics；不得把 Core 的 clamp 值反向覆盖 raw `100 - usedPercent`，也不得用较新的 credits/cost 时间给旧 usage 续命。
+- App 提供的 collector 临时配置必须只存在于 Store 内存，并通过 connection-scoped、request/route/lease 绑定的 reverse broker 释放一次；只允许所选 route 声明的键，broker 消费后必须移除值。不得写入文件、UserDefaults、Keychain、日志、fixture 或文档；`Clear Session Data` 必须清除 route 输入、observation 和 snapshot，并失效 generation。
+- Worker 启动时必须清除除显式 runtime/test-safety allowlist 外的全部继承环境；route 配置只能通过一次性 broker lease 临时安装到 facade context 与真实 process environment，结束后恢复。不得改回“只过滤 facade 字典”或让其它 provider ambient 变量留在 Worker，也不得主动启用 verbose/HTML dump 或持久 CLI session。即使如此，HOME 下硬编码 storage、login-shell rc、浏览器、Keychain、网络与 detached subprocess 访问仍不属于完整 sandbox。
+- selected account 必须有稳定 UUID，并由 host resolver 返回匹配确认 ID 与带非空 email/provider account-ID anchor 的 exact identity expectation；其完整 environment/settings 必须替换而不是合并 ambient credential context。label 不得参与凭据选择，未确认账户不得进入 strategy resolution；account-less manual-token callback 不得用于 selected account，token-account writeback 只允许匹配 confirmed UUID。
+- selected-account fetch 后必须同时校验 usage identity 与同包 dashboard email；证据不足、provider/账户不匹配或多来源冲突时必须整包拒绝、停止 fallback，且不得暴露 usage、credits、artifact、diagnostic 或 credential ownership。只有验证通过的成功结果可标为 `.resultVerified`；`.hostResolved` 只表示 host 输入 context 已确认。该校验是 post-fetch 防误归因 gate，不是读取/副作用沙箱。
+- reverse configuration broker 只能保证 App 主动提供的值按 route/operation 受限，不能声称 Core 没有内部读取或写回。OAuth refresh、provider credential mutation、browser/Keychain prompt、CLI subprocess、本地数据库/日志读取与潜在 billable probe 必须继续逐 strategy 审查。
+- 标记 `requiresConsent` 的高风险 route 必须在每次 `Check Usage` 前由 UI 单独确认，并把本次 consent 写入 authorization；Worker 也必须复核。上一次同意、选择 method、打开纯展示页或只在 Settings 选择 provider 都不能替代本次确认。
+- CodexBar 的 MIT 许可证不授予 provider private API、Cookie/session 或账号数据使用权；private web/cookie 来源不得因 CodexBar 用户量而自动标成 Dashis `Official`。
+- 自动测试不得执行真实 CodexBar provider。只允许 synthetic snapshot、synthetic exact live route、fake/default-deny 路径与临时 scratch；不得读取真实 HOME、Keychain、浏览器、provider CLI 或网络。
 
 ## 凭据与隐私禁区
 
 - 不读取、打印、摘要、复制、发送或写入 `.env`、API key、token、password、Cookie、session、私钥、证书、SSH key、Keychain 内容、浏览器 profile 或无关私人文件。
 - 不把真实 API 响应、用户数据、账号标识、完整日志、请求体、prompt、completion、成本账单或个人隐私路径写入 docs、report、fixture、截图或 Git。
-- OpenRouter OAuth key/management key、Google access token、Codex Enterprise analytics key 和 OAuth/PKCE 中间值只存在于当前 App session；不得写入 UserDefaults、文件、日志、Keychain 或 analytics。
+- collector 临时配置、OpenRouter OAuth key/management key、Google access token、Codex Enterprise analytics key 和 OAuth/PKCE 中间值只存在于当前 App session；不得写入 UserDefaults、文件、日志、Keychain 或 analytics。
 - 当前 Google OAuth 必须丢弃 refresh token 与 ID token；若未来需要跨启动登录，必须单独评审 Keychain access、撤销、迁移和删除验证。
 - `Clear` 必须取消对应 provider 的本地异步操作与 loopback listener，递增 generation，并清除输入、session key/token、OAuth state/verifier 和内存 snapshot；迟到响应不得重新写回。
 - `Clear` 只保证清理 Dashis 本地状态，不能保证撤销已在 OpenRouter 服务端通过 `/auth/keys` 创建的 key。默认界面不常驻这段说明，但执行 `Clear local session` 时必须在确认框中提示用户必要时到 OpenRouter 官方账户页 revoke。

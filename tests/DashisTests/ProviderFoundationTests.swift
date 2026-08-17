@@ -207,9 +207,10 @@ final class ProviderSnapshotTests: XCTestCase {
     XCTAssertEqual(projected.stats.first?.value, "Unlimited")
   }
 
-  func testVisualizationPrioritizesReturnedWindowAndKeepsCreditsSecondary() throws {
+  func testVisualizationPrioritizesSubscriptionWindowsAndKeepsCreditsSecondary() throws {
     let now = Date(timeIntervalSince1970: 1_800_000_000)
-    let reset = now.addingTimeInterval(7 * 24 * 60 * 60)
+    let fiveHourReset = now.addingTimeInterval(5 * 60 * 60)
+    let sevenDayReset = now.addingTimeInterval(7 * 24 * 60 * 60)
     let snapshot = ProviderSnapshot(
       providerID: .codex,
       scope: .personal("pro"),
@@ -217,14 +218,26 @@ final class ProviderSnapshotTests: XCTestCase {
       observedAt: now,
       windows: [
         QuotaWindow(
-          id: "weekly",
-          label: "Weekly usage limit",
+          id: "five-hour",
+          label: "5-hour window",
+          used: nil,
+          limit: 100,
+          remaining: nil,
+          usedPercentage: 12,
+          remainingPercentage: 88,
+          resetsAt: fiveHourReset,
+          unit: "%",
+          isEstimated: false
+        ),
+        QuotaWindow(
+          id: "seven-day",
+          label: "7-day window",
           used: nil,
           limit: 100,
           remaining: nil,
           usedPercentage: 6,
           remainingPercentage: 94,
-          resetsAt: reset,
+          resetsAt: sevenDayReset,
           unit: "%",
           isEstimated: false
         )
@@ -247,13 +260,16 @@ final class ProviderSnapshotTests: XCTestCase {
     let visualization = ProviderVisualizationProjection.make(snapshot: snapshot, now: now)
 
     XCTAssertEqual(visualization.primaryCards.count, 2)
-    XCTAssertEqual(visualization.primaryCards[0].headline, "94%")
+    XCTAssertEqual(visualization.primaryCards.map(\.title), ["5-hour window", "7-day window"])
+    XCTAssertEqual(visualization.primaryCards[0].headline, "88%")
     XCTAssertEqual(visualization.primaryCards[0].descriptor, "remaining")
-    XCTAssertEqual(try XCTUnwrap(visualization.primaryCards[0].progressFraction), 0.94, accuracy: 0.000_001)
+    XCTAssertEqual(try XCTUnwrap(visualization.primaryCards[0].progressFraction), 0.88, accuracy: 0.000_001)
     XCTAssertEqual(visualization.primaryCards[0].progressKind, .remaining)
     XCTAssertTrue(visualization.primaryCards[0].supportingText?.hasPrefix("Resets ") == true)
-    XCTAssertEqual(visualization.primaryCards[1].headline, "0")
-    XCTAssertEqual(visualization.primaryCards[1].supportingText, "5 credits reset available")
+    XCTAssertEqual(visualization.primaryCards[1].headline, "94%")
+    XCTAssertEqual(visualization.additionalCards.count, 1)
+    XCTAssertEqual(visualization.additionalCards[0].headline, "0")
+    XCTAssertEqual(visualization.additionalCards[0].supportingText, "5 credits reset available")
   }
 
   func testVisualizationDoesNotInventProgressForLimitOnlyWindow() {

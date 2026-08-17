@@ -1,0 +1,82 @@
+{
+  "": {
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/primary.swiftdeps"
+  },
+  "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/checkouts/SweetCookieKit/Sources/SweetCookieKit/BrowserCatalog.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/BrowserCatalog.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/BrowserCatalog.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/BrowserCatalog~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/BrowserCatalog.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/BrowserCatalog.dia"
+  },
+  "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/checkouts/SweetCookieKit/Sources/SweetCookieKit/BrowserCookieImporter.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/BrowserCookieImporter.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/BrowserCookieImporter.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/BrowserCookieImporter~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/BrowserCookieImporter.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/BrowserCookieImporter.dia"
+  },
+  "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/checkouts/SweetCookieKit/Sources/SweetCookieKit/BrowserCookieKeychainAccessGate.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/BrowserCookieKeychainAccessGate.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/BrowserCookieKeychainAccessGate.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/BrowserCookieKeychainAccessGate~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/BrowserCookieKeychainAccessGate.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/BrowserCookieKeychainAccessGate.dia"
+  },
+  "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/checkouts/SweetCookieKit/Sources/SweetCookieKit/BrowserCookieModels.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/BrowserCookieModels.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/BrowserCookieModels.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/BrowserCookieModels~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/BrowserCookieModels.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/BrowserCookieModels.dia"
+  },
+  "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/checkouts/SweetCookieKit/Sources/SweetCookieKit/ChromeCookieImporter.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/ChromeCookieImporter.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/ChromeCookieImporter.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/ChromeCookieImporter~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/ChromeCookieImporter.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/ChromeCookieImporter.dia"
+  },
+  "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/checkouts/SweetCookieKit/Sources/SweetCookieKit/ChromiumLevelDBReader.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/ChromiumLevelDBReader.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/ChromiumLevelDBReader.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/ChromiumLevelDBReader~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/ChromiumLevelDBReader.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/ChromiumLevelDBReader.dia"
+  },
+  "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/checkouts/SweetCookieKit/Sources/SweetCookieKit/ChromiumLocalStorageReader+LevelDB.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/ChromiumLocalStorageReader+LevelDB.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/ChromiumLocalStorageReader+LevelDB.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/ChromiumLocalStorageReader+LevelDB~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/ChromiumLocalStorageReader+LevelDB.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/ChromiumLocalStorageReader+LevelDB.dia"
+  },
+  "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/checkouts/SweetCookieKit/Sources/SweetCookieKit/ChromiumLocalStorageReader.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/ChromiumLocalStorageReader.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/ChromiumLocalStorageReader.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/ChromiumLocalStorageReader~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/ChromiumLocalStorageReader.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/ChromiumLocalStorageReader.dia"
+  },
+  "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/checkouts/SweetCookieKit/Sources/SweetCookieKit/GeckoCookieImporter.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/GeckoCookieImporter.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/GeckoCookieImporter.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/GeckoCookieImporter~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/GeckoCookieImporter.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/GeckoCookieImporter.dia"
+  },
+  "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/checkouts/SweetCookieKit/Sources/SweetCookieKit/SafariCookieImporter.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/SafariCookieImporter.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/SafariCookieImporter.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/SafariCookieImporter~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/SafariCookieImporter.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/SafariCookieImporter.dia"
+  },
+  "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/checkouts/SweetCookieKit/Sources/SweetCookieKit/SnappyDecoder.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/SnappyDecoder.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/SnappyDecoder.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/SnappyDecoder~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/SnappyDecoder.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/SweetCookieKit.build/SnappyDecoder.dia"
+  }
+}

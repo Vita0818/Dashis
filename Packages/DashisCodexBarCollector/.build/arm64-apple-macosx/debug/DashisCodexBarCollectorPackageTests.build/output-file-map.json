@@ -1,0 +1,12 @@
+{
+  "": {
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCodexBarCollectorPackageTests.build/primary.swiftdeps"
+  },
+  "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCodexBarCollectorPackageTests.derived/runner.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCodexBarCollectorPackageTests.build/runner.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCodexBarCollectorPackageTests.build/runner.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCodexBarCollectorPackageTests.build/runner~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCodexBarCollectorPackageTests.build/runner.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/DashisCodexBarCollectorPackageTests.build/runner.dia"
+  }
+}

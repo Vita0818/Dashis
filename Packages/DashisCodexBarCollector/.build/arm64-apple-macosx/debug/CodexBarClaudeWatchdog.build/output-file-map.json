@@ -1,0 +1,12 @@
+{
+  "": {
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarClaudeWatchdog.build/primary.swiftdeps"
+  },
+  "/Users/vita/Vitemis/Dashis/Vendor/CodexBarCore/Sources/CodexBarClaudeWatchdog/main.swift": {
+    "dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarClaudeWatchdog.build/main.d",
+    "object": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarClaudeWatchdog.build/main.swift.o",
+    "swiftmodule": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarClaudeWatchdog.build/main~partial.swiftmodule",
+    "swift-dependencies": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarClaudeWatchdog.build/main.swiftdeps",
+    "diagnostics": "/Users/vita/Vitemis/Dashis/Packages/DashisCodexBarCollector/.build/arm64-apple-macosx/debug/CodexBarClaudeWatchdog.build/main.dia"
+  }
+}

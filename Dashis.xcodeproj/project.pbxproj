@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -38,6 +38,25 @@
 		A20000000000000000000020 /* ProviderDecoderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000038 /* ProviderDecoderTests.swift */; };
 		B70000000000000000000001 /* SecurityBoundaryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B70000000000000000000002 /* SecurityBoundaryTests.swift */; };
 		C80000000000000000000001 /* ProviderCorrectnessTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C80000000000000000000002 /* ProviderCorrectnessTests.swift */; };
+		D90000000000000000000001 /* CollectionTarget.swift in Sources */ = {isa = PBXBuildFile; fileRef = D91000000000000000000001 /* CollectionTarget.swift */; };
+		D90000000000000000000002 /* ProviderObservation.swift in Sources */ = {isa = PBXBuildFile; fileRef = D91000000000000000000002 /* ProviderObservation.swift */; };
+		D90000000000000000000003 /* ProviderRouteRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = D91000000000000000000003 /* ProviderRouteRegistry.swift */; };
+		D90000000000000000000004 /* CollectorOutcomeValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D91000000000000000000004 /* CollectorOutcomeValidator.swift */; };
+		D90000000000000000000005 /* NativeSnapshotObservationBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = D91000000000000000000005 /* NativeSnapshotObservationBridge.swift */; };
+		D90000000000000000000006 /* CollectorWorkerClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = D91000000000000000000006 /* CollectorWorkerClient.swift */; };
+		D90000000000000000000007 /* ProviderRunCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D91000000000000000000007 /* ProviderRunCoordinator.swift */; };
+		D90000000000000000000008 /* ProviderCollectionRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = D91000000000000000000008 /* ProviderCollectionRuntime.swift */; };
+		D90100000000000000000001 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = D91100000000000000000001 /* main.swift */; };
+		D90100000000000000000002 /* CollectorWorkerListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = D91100000000000000000002 /* CollectorWorkerListener.swift */; };
+		D90100000000000000000003 /* DashisCollectorWorkerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D91100000000000000000003 /* DashisCollectorWorkerService.swift */; };
+		D90100000000000000000004 /* CollectorWorkerCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D91100000000000000000004 /* CollectorWorkerCoordinator.swift */; };
+		D90200000000000000000001 /* DashisCollectorContract in Frameworks */ = {isa = PBXBuildFile; productRef = D96100000000000000000001 /* DashisCollectorContract */; };
+		D90200000000000000000002 /* DashisCollectorContract in Frameworks */ = {isa = PBXBuildFile; productRef = D96200000000000000000001 /* DashisCollectorContract */; };
+		D90200000000000000000003 /* CodexBarCollector in Frameworks */ = {isa = PBXBuildFile; productRef = D96300000000000000000001 /* CodexBarCollector */; };
+		D90200000000000000000004 /* DashisCollectorWorker.xpc in Embed XPC Services */ = {isa = PBXBuildFile; fileRef = D91200000000000000000001 /* DashisCollectorWorker.xpc */; };
+		D90200000000000000000005 /* DashisCollectorContract in Frameworks */ = {isa = PBXBuildFile; productRef = D96400000000000000000001 /* DashisCollectorContract */; };
+		D90300000000000000000001 /* ProviderIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D91300000000000000000001 /* ProviderIntegrationTests.swift */; };
+		E10000000000000000000001 /* DashisProviderCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000000000000000000002 /* DashisProviderCatalog.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -55,7 +74,39 @@
 			remoteGlobalIDString = A10000000000000000000070;
 			remoteInfo = Dashis;
 		};
+		D97000000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A10000000000000000000080 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D94000000000000000000001;
+			remoteInfo = DashisCollectorWorker;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A20000000000000000000077 /* Embed Claude Helper */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 6;
+			files = (
+				A20000000000000000000018 /* dashis-claude-statusline in Embed Claude Helper */,
+			);
+			name = "Embed Claude Helper";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D93300000000000000000001 /* Embed XPC Services */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/XPCServices";
+			dstSubfolderSpec = 16;
+			files = (
+				D90200000000000000000004 /* DashisCollectorWorker.xpc in Embed XPC Services */,
+			);
+			name = "Embed XPC Services";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		A10000000000000000000010 /* DashisApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashisApp.swift; sourceTree = "<group>"; };
@@ -77,9 +128,9 @@
 		A10000000000000000000043 /* NEXT_TARGET.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = NEXT_TARGET.md; sourceTree = "<group>"; };
 		A10000000000000000000044 /* PROJECT_MAP.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = PROJECT_MAP.md; sourceTree = "<group>"; };
 		A10000000000000000000045 /* TESTING.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = TESTING.md; sourceTree = "<group>"; };
-		A10000000000000000000046 /* docs/AGENTS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = AGENTS.md; sourceTree = "<group>"; };
-		A10000000000000000000047 /* docs/CLAUDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CLAUDE.md; sourceTree = "<group>"; };
-		A10000000000000000000048 /* docs/GEMINI.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = GEMINI.md; sourceTree = "<group>"; };
+		A10000000000000000000046 /* AGENTS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = AGENTS.md; sourceTree = "<group>"; };
+		A10000000000000000000047 /* CLAUDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CLAUDE.md; sourceTree = "<group>"; };
+		A10000000000000000000048 /* GEMINI.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = GEMINI.md; sourceTree = "<group>"; };
 		A20000000000000000000021 /* ProviderSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderSnapshot.swift; sourceTree = "<group>"; };
 		A20000000000000000000022 /* ProviderUsageClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderUsageClient.swift; sourceTree = "<group>"; };
 		A20000000000000000000023 /* ProviderJSON.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderJSON.swift; sourceTree = "<group>"; };
@@ -98,31 +149,34 @@
 		A20000000000000000000036 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		A20000000000000000000037 /* ProviderFoundationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderFoundationTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000038 /* ProviderDecoderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderDecoderTests.swift; sourceTree = "<group>"; };
-		B70000000000000000000002 /* SecurityBoundaryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityBoundaryTests.swift; sourceTree = "<group>"; };
-		C80000000000000000000002 /* ProviderCorrectnessTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderCorrectnessTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000050 /* dashis-claude-statusline */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "dashis-claude-statusline"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A20000000000000000000051 /* DashisTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DashisTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B70000000000000000000002 /* SecurityBoundaryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityBoundaryTests.swift; sourceTree = "<group>"; };
+		C80000000000000000000002 /* ProviderCorrectnessTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderCorrectnessTests.swift; sourceTree = "<group>"; };
+		D91000000000000000000001 /* CollectionTarget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionTarget.swift; sourceTree = "<group>"; };
+		D91000000000000000000002 /* ProviderObservation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderObservation.swift; sourceTree = "<group>"; };
+		D91000000000000000000003 /* ProviderRouteRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderRouteRegistry.swift; sourceTree = "<group>"; };
+		D91000000000000000000004 /* CollectorOutcomeValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectorOutcomeValidator.swift; sourceTree = "<group>"; };
+		D91000000000000000000005 /* NativeSnapshotObservationBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeSnapshotObservationBridge.swift; sourceTree = "<group>"; };
+		D91000000000000000000006 /* CollectorWorkerClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectorWorkerClient.swift; sourceTree = "<group>"; };
+		D91000000000000000000007 /* ProviderRunCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderRunCoordinator.swift; sourceTree = "<group>"; };
+		D91000000000000000000008 /* ProviderCollectionRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderCollectionRuntime.swift; sourceTree = "<group>"; };
+		D91100000000000000000001 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		D91100000000000000000002 /* CollectorWorkerListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectorWorkerListener.swift; sourceTree = "<group>"; };
+		D91100000000000000000003 /* DashisCollectorWorkerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashisCollectorWorkerService.swift; sourceTree = "<group>"; };
+		D91100000000000000000004 /* CollectorWorkerCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectorWorkerCoordinator.swift; sourceTree = "<group>"; };
+		D91100000000000000000005 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		D91200000000000000000001 /* DashisCollectorWorker.xpc */ = {isa = PBXFileReference; explicitFileType = "wrapper.xpc-service"; includeInIndex = 0; path = DashisCollectorWorker.xpc; sourceTree = BUILT_PRODUCTS_DIR; };
+		D91300000000000000000001 /* ProviderIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderIntegrationTests.swift; sourceTree = "<group>"; };
+		E10000000000000000000002 /* DashisProviderCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashisProviderCatalog.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
-
-/* Begin PBXCopyFilesBuildPhase section */
-		A20000000000000000000077 /* Embed Claude Helper */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 6;
-			files = (
-				A20000000000000000000018 /* dashis-claude-statusline in Embed Claude Helper */,
-			);
-			name = "Embed Claude Helper";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A10000000000000000000050 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D90200000000000000000001 /* DashisCollectorContract in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -137,13 +191,23 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D90200000000000000000005 /* DashisCollectorContract in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D93000000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D90200000000000000000002 /* DashisCollectorContract in Frameworks */,
+				D90200000000000000000003 /* CodexBarCollector in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		A10000000000000000000060 /* Dashis */ = {
+		A10000000000000000000060 = {
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000061 /* App */,
@@ -166,13 +230,49 @@
 			path = App;
 			sourceTree = "<group>";
 		};
+		A10000000000000000000063 /* docs */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000040 /* ARCHITECTURE.md */,
+				A10000000000000000000041 /* CURRENT_STATE.md */,
+				A10000000000000000000042 /* DO_NOT_BREAK.md */,
+				A10000000000000000000043 /* NEXT_TARGET.md */,
+				A10000000000000000000044 /* PROJECT_MAP.md */,
+				A10000000000000000000045 /* TESTING.md */,
+				A10000000000000000000046 /* AGENTS.md */,
+				A10000000000000000000047 /* CLAUDE.md */,
+				A10000000000000000000048 /* GEMINI.md */,
+			);
+			path = docs;
+			sourceTree = "<group>";
+		};
+		A10000000000000000000064 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		A10000000000000000000065 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000028 /* Dashis.app */,
+				A20000000000000000000050 /* dashis-claude-statusline */,
+				A20000000000000000000051 /* DashisTests.xctest */,
+				D91200000000000000000001 /* DashisCollectorWorker.xpc */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		A10000000000000000000066 /* macOS */ = {
 			isa = PBXGroup;
 			children = (
+				D92000000000000000000001 /* ProviderIntegration */,
 				A10000000000000000000010 /* DashisApp.swift */,
 				A10000000000000000000011 /* DashboardView.swift */,
 				A10000000000000000000012 /* DashisDesign.swift */,
 				A10000000000000000000013 /* DashisModels.swift */,
+				E10000000000000000000002 /* DashisProviderCatalog.swift */,
 				A10000000000000000000014 /* DashisSidebar.swift */,
 				A10000000000000000000015 /* DashisDashboardDetail.swift */,
 				A10000000000000000000016 /* DashisDashboardComponents.swift */,
@@ -197,43 +297,11 @@
 			path = macOS;
 			sourceTree = "<group>";
 		};
-		A10000000000000000000063 /* docs */ = {
-			isa = PBXGroup;
-			children = (
-				A10000000000000000000040 /* ARCHITECTURE.md */,
-				A10000000000000000000041 /* CURRENT_STATE.md */,
-				A10000000000000000000042 /* DO_NOT_BREAK.md */,
-				A10000000000000000000043 /* NEXT_TARGET.md */,
-				A10000000000000000000044 /* PROJECT_MAP.md */,
-				A10000000000000000000045 /* TESTING.md */,
-				A10000000000000000000046 /* docs/AGENTS.md */,
-				A10000000000000000000047 /* docs/CLAUDE.md */,
-				A10000000000000000000048 /* docs/GEMINI.md */,
-			);
-			path = docs;
-			sourceTree = "<group>";
-		};
-		A10000000000000000000064 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
-		A10000000000000000000065 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				A10000000000000000000028 /* Dashis.app */,
-				A20000000000000000000050 /* dashis-claude-statusline */,
-				A20000000000000000000051 /* DashisTests.xctest */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
 		A20000000000000000000060 /* Tools */ = {
 			isa = PBXGroup;
 			children = (
 				A20000000000000000000062 /* ClaudeStatusLineHelper */,
+				D92100000000000000000001 /* DashisCollectorWorker */,
 			);
 			path = Tools;
 			sourceTree = "<group>";
@@ -261,8 +329,36 @@
 				A20000000000000000000038 /* ProviderDecoderTests.swift */,
 				B70000000000000000000002 /* SecurityBoundaryTests.swift */,
 				C80000000000000000000002 /* ProviderCorrectnessTests.swift */,
+				D91300000000000000000001 /* ProviderIntegrationTests.swift */,
 			);
 			path = DashisTests;
+			sourceTree = "<group>";
+		};
+		D92000000000000000000001 /* ProviderIntegration */ = {
+			isa = PBXGroup;
+			children = (
+				D91000000000000000000001 /* CollectionTarget.swift */,
+				D91000000000000000000002 /* ProviderObservation.swift */,
+				D91000000000000000000003 /* ProviderRouteRegistry.swift */,
+				D91000000000000000000004 /* CollectorOutcomeValidator.swift */,
+				D91000000000000000000005 /* NativeSnapshotObservationBridge.swift */,
+				D91000000000000000000006 /* CollectorWorkerClient.swift */,
+				D91000000000000000000007 /* ProviderRunCoordinator.swift */,
+				D91000000000000000000008 /* ProviderCollectionRuntime.swift */,
+			);
+			path = ProviderIntegration;
+			sourceTree = "<group>";
+		};
+		D92100000000000000000001 /* DashisCollectorWorker */ = {
+			isa = PBXGroup;
+			children = (
+				D91100000000000000000001 /* main.swift */,
+				D91100000000000000000002 /* CollectorWorkerListener.swift */,
+				D91100000000000000000003 /* DashisCollectorWorkerService.swift */,
+				D91100000000000000000004 /* CollectorWorkerCoordinator.swift */,
+				D91100000000000000000005 /* Info.plist */,
+			);
+			path = DashisCollectorWorker;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -276,13 +372,18 @@
 				A10000000000000000000050 /* Frameworks */,
 				A10000000000000000000073 /* Resources */,
 				A20000000000000000000077 /* Embed Claude Helper */,
+				D93300000000000000000001 /* Embed XPC Services */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				A20000000000000000000080 /* PBXTargetDependency */,
+				D97100000000000000000001 /* PBXTargetDependency */,
 			);
 			name = Dashis;
+			packageProductDependencies = (
+				D96100000000000000000001 /* DashisCollectorContract */,
+			);
 			productName = Dashis;
 			productReference = A10000000000000000000028 /* Dashis.app */;
 			productType = "com.apple.product-type.application";
@@ -317,9 +418,33 @@
 				A20000000000000000000082 /* PBXTargetDependency */,
 			);
 			name = DashisTests;
+			packageProductDependencies = (
+				D96400000000000000000001 /* DashisCollectorContract */,
+			);
 			productName = DashisTests;
 			productReference = A20000000000000000000051 /* DashisTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		D94000000000000000000001 /* DashisCollectorWorker */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D95000000000000000000001 /* Build configuration list for PBXNativeTarget "DashisCollectorWorker" */;
+			buildPhases = (
+				D93100000000000000000001 /* Sources */,
+				D93000000000000000000001 /* Frameworks */,
+				D93200000000000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DashisCollectorWorker;
+			packageProductDependencies = (
+				D96200000000000000000001 /* DashisCollectorContract */,
+				D96300000000000000000001 /* CodexBarCollector */,
+			);
+			productName = DashisCollectorWorker;
+			productReference = D91200000000000000000001 /* DashisCollectorWorker.xpc */;
+			productType = "com.apple.product-type.xpc-service";
 		};
 /* End PBXNativeTarget section */
 
@@ -342,6 +467,9 @@
 						CreatedOnToolsVersion = 16.0;
 						TestTargetID = A10000000000000000000070;
 					};
+					D94000000000000000000001 = {
+						CreatedOnToolsVersion = 26.0;
+					};
 				};
 			};
 			buildConfigurationList = A10000000000000000000081 /* Build configuration list for PBXProject "Dashis" */;
@@ -352,7 +480,10 @@
 				en,
 				Base,
 			);
-			mainGroup = A10000000000000000000060 /* Dashis */;
+			mainGroup = A10000000000000000000060;
+			packageReferences = (
+				D96000000000000000000001 /* XCLocalSwiftPackageReference "Packages/DashisCodexBarCollector" */,
+			);
 			productRefGroup = A10000000000000000000065 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -360,6 +491,7 @@
 				A10000000000000000000070 /* Dashis */,
 				A20000000000000000000070 /* ClaudeStatusLineHelper */,
 				A20000000000000000000071 /* DashisTests */,
+				D94000000000000000000001 /* DashisCollectorWorker */,
 			);
 		};
 /* End PBXProject section */
@@ -379,6 +511,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D93200000000000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -390,6 +529,7 @@
 				A10000000000000000000002 /* DashboardView.swift in Sources */,
 				A10000000000000000000003 /* DashisDesign.swift in Sources */,
 				A10000000000000000000004 /* DashisModels.swift in Sources */,
+				E10000000000000000000001 /* DashisProviderCatalog.swift in Sources */,
 				A10000000000000000000005 /* DashisSidebar.swift in Sources */,
 				A10000000000000000000006 /* DashisDashboardDetail.swift in Sources */,
 				A10000000000000000000007 /* DashisDashboardComponents.swift in Sources */,
@@ -410,6 +550,14 @@
 				A20000000000000000000013 /* ClaudeStatusLineCodec.swift in Sources */,
 				A20000000000000000000014 /* ClaudeUsageClient.swift in Sources */,
 				A20000000000000000000015 /* ClaudeSettingsPatcher.swift in Sources */,
+				D90000000000000000000001 /* CollectionTarget.swift in Sources */,
+				D90000000000000000000002 /* ProviderObservation.swift in Sources */,
+				D90000000000000000000003 /* ProviderRouteRegistry.swift in Sources */,
+				D90000000000000000000004 /* CollectorOutcomeValidator.swift in Sources */,
+				D90000000000000000000005 /* NativeSnapshotObservationBridge.swift in Sources */,
+				D90000000000000000000006 /* CollectorWorkerClient.swift in Sources */,
+				D90000000000000000000007 /* ProviderRunCoordinator.swift in Sources */,
+				D90000000000000000000008 /* ProviderCollectionRuntime.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -430,6 +578,18 @@
 				A20000000000000000000020 /* ProviderDecoderTests.swift in Sources */,
 				B70000000000000000000001 /* SecurityBoundaryTests.swift in Sources */,
 				C80000000000000000000001 /* ProviderCorrectnessTests.swift in Sources */,
+				D90300000000000000000001 /* ProviderIntegrationTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D93100000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D90100000000000000000001 /* main.swift in Sources */,
+				D90100000000000000000002 /* CollectorWorkerListener.swift in Sources */,
+				D90100000000000000000003 /* DashisCollectorWorkerService.swift in Sources */,
+				D90100000000000000000004 /* CollectorWorkerCoordinator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -445,6 +605,11 @@
 			isa = PBXTargetDependency;
 			target = A10000000000000000000070 /* Dashis */;
 			targetProxy = A20000000000000000000083 /* PBXContainerItemProxy */;
+		};
+		D97100000000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D94000000000000000000001 /* DashisCollectorWorker */;
+			targetProxy = D97000000000000000000001 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -566,6 +731,7 @@
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = L5ZXXFUZTL;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Dashis;
@@ -576,13 +742,13 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.Vita0818.DashisMac;
+				MARKETING_VERSION = 0.5;
+				PRODUCT_BUNDLE_IDENTIFIER = com.Vita0818.Dashis;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				SUPPORTED_PLATFORMS = macosx;
 			};
 			name = Debug;
 		};
@@ -593,6 +759,7 @@
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = L5ZXXFUZTL;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Dashis;
@@ -603,13 +770,13 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.Vita0818.DashisMac;
+				MARKETING_VERSION = 0.5;
+				PRODUCT_BUNDLE_IDENTIFIER = com.Vita0818.Dashis;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				SUPPORTED_PLATFORMS = macosx;
 			};
 			name = Release;
 		};
@@ -624,8 +791,8 @@
 				PRODUCT_NAME = "dashis-claude-statusline";
 				SDKROOT = macosx;
 				SKIP_INSTALL = YES;
-				SWIFT_VERSION = 5.0;
 				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
 		};
@@ -640,8 +807,8 @@
 				PRODUCT_NAME = "dashis-claude-statusline";
 				SDKROOT = macosx;
 				SKIP_INSTALL = YES;
-				SWIFT_VERSION = 5.0;
 				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};
@@ -656,8 +823,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.Vita0818.DashisMacTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
-				SWIFT_VERSION = 5.0;
 				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Dashis.app/Contents/MacOS/Dashis";
 				TEST_TARGET_NAME = Dashis;
 			};
@@ -674,30 +841,86 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.Vita0818.DashisMacTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
-				SWIFT_VERSION = 5.0;
 				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Dashis.app/Contents/MacOS/Dashis";
 				TEST_TARGET_NAME = Dashis;
+			};
+			name = Release;
+		};
+		D95100000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Tools/DashisCollectorWorker/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.Vita0818.DashisMac.CollectorWorker;
+				PRODUCT_NAME = DashisCollectorWorker;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		D95100000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Tools/DashisCollectorWorker/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.Vita0818.DashisMac.CollectorWorker;
+				PRODUCT_NAME = DashisCollectorWorker;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		A10000000000000000000081 /* Build configuration list for PBXProject "Dashis" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				A10000000000000000000090 /* Debug */,
-				A10000000000000000000091 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		A10000000000000000000071 /* Build configuration list for PBXNativeTarget "Dashis" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A10000000000000000000092 /* Debug */,
 				A10000000000000000000093 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A10000000000000000000081 /* Build configuration list for PBXProject "Dashis" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A10000000000000000000090 /* Debug */,
+				A10000000000000000000091 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -720,7 +943,46 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		D95000000000000000000001 /* Build configuration list for PBXNativeTarget "DashisCollectorWorker" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D95100000000000000000001 /* Debug */,
+				D95100000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		D96000000000000000000001 /* XCLocalSwiftPackageReference "Packages/DashisCodexBarCollector" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/DashisCodexBarCollector;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		D96100000000000000000001 /* DashisCollectorContract */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D96000000000000000000001 /* XCLocalSwiftPackageReference "Packages/DashisCodexBarCollector" */;
+			productName = DashisCollectorContract;
+		};
+		D96200000000000000000001 /* DashisCollectorContract */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D96000000000000000000001 /* XCLocalSwiftPackageReference "Packages/DashisCodexBarCollector" */;
+			productName = DashisCollectorContract;
+		};
+		D96300000000000000000001 /* CodexBarCollector */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D96000000000000000000001 /* XCLocalSwiftPackageReference "Packages/DashisCodexBarCollector" */;
+			productName = CodexBarCollector;
+		};
+		D96400000000000000000001 /* DashisCollectorContract */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D96000000000000000000001 /* XCLocalSwiftPackageReference "Packages/DashisCodexBarCollector" */;
+			productName = DashisCollectorContract;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A10000000000000000000080 /* Project object */;
 }

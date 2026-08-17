@@ -1,4 +1,5 @@
 import Foundation
+import DashisCollectorContract
 import XCTest
 @testable import Dashis
 
@@ -527,12 +528,29 @@ final class GoogleQuotaCorrectnessTests: XCTestCase {
 }
 
 final class DashisProviderRegistryCorrectnessTests: XCTestCase {
+  func testSettingsRemainsAStableTopLevelSelection() {
+    XCTAssertEqual(
+      DashisSelection.normalizedRootSelection(DashisSelection.settings),
+      DashisSelection.settings)
+    XCTAssertEqual(
+      DashisSelection.normalizedRootSelection(DashisSelection.providers),
+      DashisSelection.dashboard)
+  }
+
   @MainActor
-  func testStoreContainsExactlyTheFourBuiltInProviders() {
+  func testFrontendCatalogMatchesSelectedCollectorCatalogExactly() {
     let store = DashisProviderStore()
 
     XCTAssertEqual(
-      store.providers.map(\.id),
+      store.providers.map(\.catalogProviderID),
+      CollectorRolloutCatalog.selectedProviderIDs.map(\.rawValue)
+    )
+    XCTAssertEqual(store.providers.count, 34)
+    XCTAssertEqual(Set(store.providers.map(\.id)).count, 34)
+    XCTAssertEqual(Set(store.providers.map(\.catalogProviderID)).count, 34)
+    XCTAssertEqual(store.providers.filter(\.isBuiltIn).count, 4)
+    XCTAssertEqual(
+      store.providers.filter(\.isBuiltIn).map(\.id),
       [
         ProviderID.codex.rawValue,
         ProviderID.claude.rawValue,
@@ -540,8 +558,96 @@ final class DashisProviderRegistryCorrectnessTests: XCTestCase {
         ProviderID.openRouter.rawValue
       ]
     )
-    XCTAssertEqual(Set(store.providers.map(\.id)).count, 4)
-    XCTAssertTrue(store.providers.allSatisfy(\.isBuiltIn))
+
+    let gemini = store.provider(id: ProviderID.google.rawValue)
+    XCTAssertEqual(gemini?.name, "Gemini")
+    XCTAssertEqual(gemini?.catalogProviderID, "gemini")
+    XCTAssertEqual(gemini?.integration, .native)
+    XCTAssertEqual(CollectorRolloutCatalog.liveAuthorizationCount, 41)
+  }
+
+  @MainActor
+  func testThirtyCollectorProvidersExposeExecutableRoutesAndConfiguration() {
+    let store = DashisProviderStore()
+    let collectorProviders = store.providers.filter { $0.integration == .collector }
+
+    XCTAssertEqual(collectorProviders.count, 30)
+    XCTAssertTrue(collectorProviders.allSatisfy { !$0.id.hasPrefix("custom-") })
+    XCTAssertTrue(collectorProviders.allSatisfy { !$0.name.isEmpty })
+    XCTAssertTrue(collectorProviders.allSatisfy { !$0.preparedSourceLabels.isEmpty })
+    XCTAssertTrue(collectorProviders.allSatisfy { $0.actionTitle == "Configure" })
+    XCTAssertTrue(collectorProviders.allSatisfy { store.provider(id: $0.id) != nil })
+    XCTAssertTrue(collectorProviders.allSatisfy { store.title(for: $0.id) == $0.name })
+    XCTAssertTrue(collectorProviders.allSatisfy {
+      !store.collectorRoutes(for: $0.id).isEmpty
+        && store.selectedCollectorRoute(for: $0.id) != nil
+    })
+    XCTAssertEqual(
+      collectorProviders.flatMap { store.collectorRoutes(for: $0.id) }.count,
+      41)
+    XCTAssertTrue(store.snapshots.isEmpty)
+    XCTAssertTrue(collectorProviders.allSatisfy { !store.isLoading($0.id) })
+  }
+
+  @MainActor
+  func testProviderVisibilityPersistsWithoutRemovingSettingsCatalog() {
+    let suiteName = "DashisTests.ProviderVisibility.\(UUID().uuidString)"
+    let defaults = UserDefaults(suiteName: suiteName)!
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+
+    let store = DashisProviderStore(visibilityDefaults: defaults)
+    XCTAssertEqual(store.visibleProviders.map(\.id), store.providers.map(\.id))
+    store.googleManualUsed = "42"
+
+    store.setProviderVisible(false, for: ProviderID.google.rawValue)
+
+    XCTAssertFalse(store.isProviderVisible(ProviderID.google.rawValue))
+    XCTAssertFalse(store.visibleProviders.map(\.id).contains(ProviderID.google.rawValue))
+    XCTAssertTrue(store.providers.map(\.id).contains(ProviderID.google.rawValue))
+    XCTAssertEqual(store.googleManualUsed, "42")
+    XCTAssertEqual(
+      store.normalizedDisplaySelection(ProviderID.google.rawValue),
+      DashisSelection.dashboard
+    )
+    XCTAssertEqual(
+      store.normalizedDisplaySelection(DashisSelection.settings),
+      DashisSelection.settings
+    )
+
+    let restoredStore = DashisProviderStore(visibilityDefaults: defaults)
+    XCTAssertFalse(restoredStore.isProviderVisible(ProviderID.google.rawValue))
+    XCTAssertEqual(restoredStore.providers.count, 34)
+
+    restoredStore.setProviderVisible(true, for: ProviderID.google.rawValue)
+    let reenabledStore = DashisProviderStore(visibilityDefaults: defaults)
+    XCTAssertTrue(reenabledStore.isProviderVisible(ProviderID.google.rawValue))
+
+    reenabledStore.setProviderVisible(false, for: "unknown-provider")
+    XCTAssertFalse(reenabledStore.hiddenProviderIDs.contains("unknown-provider"))
+  }
+
+  func testBrowserSessionCapableProvidersPreferTheirWebRoute() {
+    let expectedStrategies = [
+      "alibaba": "alibaba-coding-plan.web",
+      "minimax": "minimax.web",
+      "kimi": "kimi.web",
+      "deepseek": "deepseek.web",
+    ]
+
+    for (providerID, strategyID) in expectedStrategies {
+      XCTAssertEqual(
+        DashisProviderCatalog.defaultLiveRoute(for: providerID)?.strategyID,
+        strategyID)
+    }
+  }
+
+  @MainActor
+  func testOriginalFourNativeActionsRemainUnchanged() {
+    let store = DashisProviderStore()
+
+    XCTAssertEqual(store.provider(id: ProviderID.codex.rawValue)?.actionTitle, "Check Codex")
+    XCTAssertEqual(store.provider(id: ProviderID.claude.rawValue)?.actionTitle, "Reload snapshot")
+    XCTAssertEqual(store.provider(id: ProviderID.google.rawValue)?.actionTitle, "Open official page")
     XCTAssertEqual(store.openRouterMode, .account)
     XCTAssertTrue(store.needsOpenRouterAccountSetup)
     XCTAssertEqual(store.provider(id: ProviderID.openRouter.rawValue)?.actionTitle, "Set up account")

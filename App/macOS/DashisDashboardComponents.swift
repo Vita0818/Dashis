@@ -1,81 +1,178 @@
+import DashisCollectorContract
 import SwiftUI
+
+private enum DashisProviderDetailLayout {
+  static let contentWidth: CGFloat = 900
+  static let fieldWidth: CGFloat = 420
+  static let pickerWidth: CGFloat = 300
+}
+
+private struct DashisFormPrimaryAction: View {
+  let title: String
+  let loadingTitle: String
+  let isLoading: Bool
+  let isDisabled: Bool
+  let action: () -> Void
+
+  var body: some View {
+    HStack {
+      Spacer()
+      Button(action: action) {
+        HStack(spacing: 7) {
+          if isLoading {
+            ProgressView()
+              .controlSize(.small)
+              .accessibilityHidden(true)
+          }
+          Text(isLoading ? loadingTitle : title)
+        }
+      }
+      .buttonStyle(.borderedProminent)
+      .controlSize(.large)
+      .disabled(isLoading || isDisabled)
+    }
+  }
+}
 
 struct DashisProviderCard: View {
   let provider: DashisProvider
-  let isLoading: Bool
-  let onPrimaryAction: () -> Void
+  let snapshot: ProviderSnapshot?
+  let onOpen: () -> Void
 
   var body: some View {
-    HStack(alignment: .center, spacing: 20) {
-      ViewThatFits(in: .horizontal) {
-        HStack(spacing: 20) {
-          providerIdentity
-            .frame(width: 180, alignment: .leading)
-          primaryValue
-        }
+    Button(action: onOpen) {
+      GroupBox {
+        VStack(alignment: .leading, spacing: 0) {
+          dashboardHeader
 
-        VStack(alignment: .leading, spacing: 5) {
-          providerIdentity
-          primaryValue
-        }
-      }
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .accessibilityElement(children: .ignore)
-      .accessibilityLabel(provider.name)
-      .accessibilityValue(provider.primary)
-      .accessibilityAddTraits(.isHeader)
-      .accessibilityCustomContent("Provider type", provider.kind)
-      .accessibilityCustomContent("Source", provider.sourceLabel)
-      .accessibilityCustomContent("Freshness", provider.freshnessLabel)
-      .accessibilityCustomContent("Status", provider.statusLabel)
+          Divider()
+            .padding(.vertical, 12)
 
-      VStack(alignment: .trailing, spacing: 8) {
-        if let qualifier = provider.summaryQualifier {
-          DashisProviderQualifier(provider: provider, label: qualifier)
-        }
-
-        if let actionTitle = provider.actionTitle {
-          Button {
-            onPrimaryAction()
-          } label: {
-            HStack(spacing: 7) {
-              if isLoading {
-                ProgressView()
-                  .controlSize(.small)
-                  .accessibilityHidden(true)
-              }
-              Text(isLoading ? "Checking" : actionTitle)
-            }
+          if let visualization, !visualization.primaryCards.isEmpty {
+            dashboardPrimaryUsage(visualization.primaryCards)
+          } else {
+            dashboardEmptyState
           }
-          .buttonStyle(.bordered)
-          .disabled(isLoading)
-          .accessibilityLabel(isLoading ? "Checking \(provider.name)" : "\(actionTitle) for \(provider.name)")
-          .accessibilityValue(isLoading ? "In progress" : "")
         }
+        .frame(maxWidth: .infinity, minHeight: 138, alignment: .topLeading)
+        .padding(.vertical, 2)
+      }
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(provider.name)
+    .accessibilityValue(accessibilityValue)
+    .accessibilityHint("Show usage details")
+    .accessibilityCustomContent("Provider type", provider.kind)
+    .accessibilityCustomContent("Source", provider.sourceLabel)
+    .accessibilityCustomContent("Freshness", provider.freshnessLabel)
+    .accessibilityCustomContent("Status", provider.statusLabel)
+  }
+
+  private var visualization: ProviderVisualization? {
+    snapshot.map { ProviderVisualizationProjection.make(snapshot: $0) }
+  }
+
+  private var dashboardHeader: some View {
+    HStack(alignment: .firstTextBaseline, spacing: 12) {
+      Text(provider.name)
+        .font(.headline)
+        .foregroundStyle(.primary)
+        .lineLimit(1)
+
+      Spacer(minLength: 12)
+
+      if let qualifier = provider.summaryQualifier {
+        DashisProviderQualifier(provider: provider, label: qualifier)
       }
     }
-    .padding(.horizontal, 4)
-    .padding(.vertical, 18)
-    .accessibilityElement(children: .contain)
   }
 
-  private var providerIdentity: some View {
-    HStack(spacing: 12) {
-      Image(systemName: provider.symbolName)
-        .font(.system(size: 17, weight: .medium))
-        .foregroundStyle(.secondary)
-        .frame(width: 24)
-        .accessibilityHidden(true)
-      Text(provider.name)
-        .font(DashisType.body(18, .semibold))
+  @ViewBuilder
+  private func dashboardPrimaryUsage(_ cards: [ProviderUsageCard]) -> some View {
+    if cards.count > 1 {
+      HStack(alignment: .top, spacing: 16) {
+        DashisDashboardUsageMetric(card: cards[0])
+        Divider()
+        DashisDashboardUsageMetric(card: cards[1])
+      }
+    } else if let card = cards.first {
+      DashisDashboardUsageMetric(card: card)
     }
   }
 
-  private var primaryValue: some View {
+  private var dashboardEmptyState: some View {
     Text(provider.primary)
-      .font(DashisType.title(24))
+      .font(.title2.weight(.semibold))
+      .foregroundStyle(.secondary)
+      .lineLimit(2)
+      .minimumScaleFactor(0.82)
+      .frame(maxWidth: .infinity, minHeight: 98, alignment: .leading)
+  }
+
+  private var accessibilityValue: String {
+    guard let primaryCards = visualization?.primaryCards, !primaryCards.isEmpty else {
+      return provider.primary
+    }
+    return primaryCards.map { card in
+      [card.title, card.headline, card.descriptor]
+        .filter { !$0.isEmpty }
+        .joined(separator: " ")
+    }
+    .joined(separator: ". ")
+  }
+}
+
+private struct DashisDashboardUsageMetric: View {
+  let card: ProviderUsageCard
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      HStack(alignment: .firstTextBaseline, spacing: 6) {
+        Text(card.title)
+          .font(.subheadline.weight(.semibold))
+          .lineLimit(2)
+
+        Spacer(minLength: 6)
+
+        if let statusLabel = card.statusLabel {
+          Text(statusLabel)
+            .font(.caption2.weight(.medium))
+            .foregroundStyle(DashisTheme.statusColor(card.tone))
+            .lineLimit(1)
+        }
+      }
+
+      HStack(alignment: .firstTextBaseline, spacing: 5) {
+        Text(card.headline)
+          .font(.title2.weight(.semibold))
+          .monospacedDigit()
+
+        if !card.descriptor.isEmpty {
+          Text(card.descriptor)
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+        }
+      }
       .lineLimit(1)
-      .monospacedDigit()
+      .minimumScaleFactor(0.72)
+
+      if let progress = card.progressFraction {
+        ProgressView(value: progress)
+          .progressViewStyle(.linear)
+          .tint(DashisUsageProgressStyle.color(for: card, progress: progress))
+          .accessibilityLabel(card.title)
+      }
+
+      if let supportingText = card.supportingText {
+        Text(supportingText)
+          .font(.footnote)
+          .foregroundStyle(.secondary)
+          .lineLimit(1)
+      }
+    }
+    .frame(maxWidth: .infinity, minHeight: 98, alignment: .topLeading)
   }
 }
 
@@ -84,16 +181,10 @@ private struct DashisProviderQualifier: View {
   let label: String
 
   var body: some View {
-    HStack(spacing: 6) {
-      Circle()
-        .fill(DashisTheme.statusColor(provider.tone))
-        .frame(width: 7, height: 7)
-        .accessibilityHidden(true)
-      Text(label)
-        .font(DashisType.body(13, .semibold))
-    }
-    .foregroundStyle(DashisTheme.statusColor(provider.tone))
-    .accessibilityHidden(true)
+    Text(label)
+      .font(.caption.weight(.medium))
+      .foregroundStyle(DashisTheme.statusColor(provider.tone))
+      .accessibilityHidden(true)
   }
 }
 
@@ -102,61 +193,17 @@ struct DashisProviderDetail: View {
   @ObservedObject var store: DashisProviderStore
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 28) {
-      if let snapshot, let visualization {
-        if !visualization.primaryCards.isEmpty {
-          usageSection(snapshot: snapshot, cards: visualization.primaryCards)
-        }
-
-        if !snapshot.warnings.isEmpty || !snapshot.partialFailures.isEmpty {
-          VStack(alignment: .leading, spacing: 10) {
-            ForEach(snapshot.warnings) { warning in
-              DashisProviderNotice(
-                title: "Warning",
-                message: warning.message,
-                symbolName: "exclamationmark.triangle",
-                tone: .watch
-              )
-            }
-            ForEach(snapshot.partialFailures) { failure in
-              DashisProviderNotice(
-                title: failure.operation,
-                message: failure.message,
-                symbolName: "xmark.octagon",
-                tone: .incident
-              )
-            }
-          }
-        }
-
-        if !visualization.additionalCards.isEmpty {
-          DisclosureGroup("More usage data") {
-            usageGrid(cards: visualization.additionalCards)
-              .padding(.top, 14)
-          }
-          .font(DashisType.body(14, .medium))
-        }
-
-        DisclosureGroup("Data details") {
-          VStack(spacing: 0) {
-            ForEach(Array(visualization.metadata.enumerated()), id: \.offset) { index, line in
-              DashisMetadataRow(line: line)
-              if index < visualization.metadata.count - 1 {
-                Divider()
-              }
-            }
-          }
-          .padding(.top, 10)
-        }
-        .font(DashisType.body(14, .medium))
-      }
-
-      if snapshot != nil {
-        Divider()
-      }
-
-      providerControls
+    ScrollView {
+      DashisProviderMainCard(
+        provider: provider,
+        snapshot: snapshot,
+        visualization: visualization
+      )
+      .frame(maxWidth: DashisProviderDetailLayout.contentWidth)
+      .padding(.horizontal, 28)
+      .padding(.vertical, 24)
     }
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
   }
 
   private var snapshot: ProviderSnapshot? {
@@ -166,32 +213,25 @@ struct DashisProviderDetail: View {
   private var visualization: ProviderVisualization? {
     snapshot.map { ProviderVisualizationProjection.make(snapshot: $0) }
   }
+}
 
-  @ViewBuilder private func usageSection(
-    snapshot: ProviderSnapshot,
-    cards: [ProviderUsageCard]
-  ) -> some View {
-    VStack(alignment: .leading, spacing: 16) {
-      Text(snapshot.windows.isEmpty && snapshot.balance == nil ? "Usage" : "Balance")
-        .font(DashisType.title(22))
-        .accessibilityAddTraits(.isHeader)
-      usageGrid(cards: cards)
-    }
-  }
+struct DashisProviderSettingsDetail: View {
+  let provider: DashisProvider
+  @ObservedObject var store: DashisProviderStore
 
-  private func usageGrid(cards: [ProviderUsageCard]) -> some View {
-    LazyVGrid(
-      columns: [
-        GridItem(.flexible(minimum: 280), spacing: 16),
-        GridItem(.flexible(minimum: 280), spacing: 16)
-      ],
-      alignment: .leading,
-      spacing: 16
-    ) {
-      ForEach(cards) { card in
-        DashisUsageCard(card: card)
+  var body: some View {
+    Form {
+      if provider.integration == .collector {
+        DashisCollectorProviderControls(store: store, provider: provider)
+      } else if provider.integration == .catalogOnly {
+        DashisCatalogProviderDetail(provider: provider)
+      } else {
+        providerControls
       }
     }
+    .formStyle(.grouped)
+    .frame(maxWidth: DashisProviderDetailLayout.contentWidth)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
   }
 
   @ViewBuilder private var providerControls: some View {
@@ -207,66 +247,429 @@ struct DashisProviderDetail: View {
   }
 }
 
-private struct DashisUsageCard: View {
-  @Environment(\.colorScheme) private var colorScheme
+private struct DashisCollectorProviderControls: View {
+  @ObservedObject var store: DashisProviderStore
+  let provider: DashisProvider
+  @State private var showingConsent = false
+
+  var body: some View {
+    Group {
+      if routes.isEmpty {
+        Section("Connection") {
+          DashisProviderNotice(
+            title: "No executable method",
+            message: "No live collector route is compiled for this provider.",
+            symbolName: "xmark.octagon",
+            tone: .incident)
+        }
+      } else if let route {
+        Section {
+          Picker("Method", selection: routeSelection) {
+            ForEach(routes, id: \.id) { candidate in
+              Text(methodLabel(candidate)).tag(candidate.id)
+            }
+          }
+          .pickerStyle(.menu)
+          .frame(width: DashisProviderDetailLayout.pickerWidth, alignment: .trailing)
+          .disabled(store.isLoading(provider.id))
+        } header: {
+          HStack {
+            Text("Connection")
+            Spacer()
+            if store.hasCollectorSessionState(for: provider.id) {
+              Menu {
+                Button("Clear Session Data", role: .destructive) {
+                  store.clearCollectorSession(for: provider.id)
+                }
+                .disabled(store.isLoading(provider.id))
+              } label: {
+                Image(systemName: "ellipsis")
+                  .accessibilityLabel("More actions")
+              }
+              .menuStyle(.borderlessButton)
+              .fixedSize()
+            }
+          }
+        }
+
+        if !route.configurationFields.isEmpty {
+          Section {
+            ForEach(route.configurationFields, id: \.key) { field in
+              LabeledContent(field.label) {
+                configurationField(field, route: route)
+                  .frame(
+                    minWidth: 280,
+                    idealWidth: DashisProviderDetailLayout.fieldWidth,
+                    maxWidth: DashisProviderDetailLayout.fieldWidth)
+              }
+            }
+          } header: {
+            Text("Credentials")
+          }
+        }
+
+        Section {
+          DashisFormPrimaryAction(
+            title: "Check Usage",
+            loadingTitle: "Checking",
+            isLoading: store.isLoading(provider.id),
+            isDisabled: false
+          ) {
+            if route.requiresConsent {
+              showingConsent = true
+            } else {
+              Task {
+                await store.runCollectorCheck(
+                  for: provider.id,
+                  consentGranted: false)
+              }
+            }
+          }
+        }
+
+        Section {
+          DisclosureGroup("Advanced") {
+            VStack(alignment: .leading, spacing: 9) {
+              LabeledContent("Source", value: sourceName(route.source))
+              LabeledContent("Route") {
+                Text(route.id)
+                  .font(.caption.monospaced())
+                  .foregroundStyle(.secondary)
+                  .textSelection(.enabled)
+              }
+              LabeledContent("Adapter") {
+                Text(route.strategyID)
+                  .font(.caption.monospaced())
+                  .foregroundStyle(.secondary)
+                  .textSelection(.enabled)
+              }
+            }
+            .padding(.top, 8)
+          }
+        }
+      }
+    }
+    .alert(
+      "Run \(provider.name) check?",
+      isPresented: $showingConsent
+    ) {
+      Button("Cancel", role: .cancel) {}
+      Button("Run Check") {
+        Task {
+          await store.runCollectorCheck(
+            for: provider.id,
+            consentGranted: true)
+        }
+      }
+    } message: {
+      Text(route?.riskSummary ?? "This collection method requires confirmation.")
+    }
+  }
+
+  private var routes: [CollectorLiveRouteDefinition] {
+    store.collectorRoutes(for: provider.id)
+  }
+
+  private var route: CollectorLiveRouteDefinition? {
+    store.selectedCollectorRoute(for: provider.id)
+  }
+
+  private var routeSelection: Binding<String> {
+    Binding(
+      get: {
+        route?.id ?? routes.first?.id ?? ""
+      },
+      set: {
+        store.selectCollectorRoute($0, for: provider.id)
+      })
+  }
+
+  @ViewBuilder
+  private func configurationField(
+    _ field: CollectorConfigurationField,
+    route: CollectorLiveRouteDefinition
+  ) -> some View {
+    let binding = Binding(
+      get: {
+        store.collectorInputValue(routeID: route.id, key: field.key)
+      },
+      set: {
+        store.setCollectorInputValue($0, routeID: route.id, key: field.key)
+      })
+    switch field.kind {
+    case .secret:
+      SecureField(field.placeholder ?? "", text: binding)
+        .textFieldStyle(.roundedBorder)
+        .accessibilityLabel(field.label)
+    case .text:
+      TextField(field.placeholder ?? "", text: binding)
+        .textFieldStyle(.roundedBorder)
+        .accessibilityLabel(field.label)
+    }
+  }
+
+  private func methodLabel(_ route: CollectorLiveRouteDefinition) -> String {
+    let base = sourceName(route.source)
+    let sameSourceRoutes = routes.filter { $0.source == route.source }
+    guard sameSourceRoutes.count > 1 else { return base }
+    return "\(base) · \(strategyName(route.strategyID))"
+  }
+
+  private func sourceName(_ source: CollectorSourceMode) -> String {
+    switch source {
+    case .web:
+      "Browser Session"
+    case .cli:
+      "Command Line"
+    case .oauth:
+      "Sign In"
+    case .api:
+      "API"
+    case .auto:
+      "Automatic"
+    }
+  }
+
+  private func strategyName(_ strategyID: String) -> String {
+    let suffix = strategyID.split(separator: ".").last.map(String.init) ?? strategyID
+    return suffix
+      .replacingOccurrences(of: "-local", with: "")
+      .replacingOccurrences(of: "-https", with: "")
+      .replacingOccurrences(of: "-", with: " ")
+      .capitalized
+      .replacingOccurrences(of: "Cli", with: "CLI")
+      .replacingOccurrences(of: "Ide", with: "IDE")
+  }
+
+}
+
+private struct DashisCatalogProviderDetail: View {
+  let provider: DashisProvider
+
+  var body: some View {
+    Section("Availability") {
+      LabeledContent(
+        "Data sources",
+        value: provider.preparedSourceLabels.joined(separator: ", ")
+      )
+
+      Text(provider.detailNote)
+        .font(.callout)
+        .foregroundStyle(.secondary)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+    .accessibilityElement(children: .contain)
+  }
+}
+
+private struct DashisProviderMainCard: View {
+  let provider: DashisProvider
+  let snapshot: ProviderSnapshot?
+  let visualization: ProviderVisualization?
+
+  var body: some View {
+    GroupBox {
+      VStack(alignment: .leading, spacing: 0) {
+        header
+
+        Divider()
+          .padding(.vertical, 14)
+
+        if let snapshot, let visualization {
+          if visualization.primaryCards.isEmpty {
+            emptyState
+          } else {
+            primaryUsage(visualization.primaryCards)
+          }
+
+          if !snapshot.warnings.isEmpty || !snapshot.partialFailures.isEmpty {
+            Divider()
+              .padding(.vertical, 14)
+            notices(snapshot)
+          }
+
+          if !visualization.additionalCards.isEmpty {
+            Divider()
+              .padding(.vertical, 12)
+            additionalUsage(visualization.additionalCards)
+          }
+
+          Divider()
+            .padding(.vertical, 12)
+          dataDetails(visualization.metadata)
+        } else {
+          emptyState
+        }
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .padding(.vertical, 2)
+    }
+    .accessibilityElement(children: .contain)
+  }
+
+  private var header: some View {
+    HStack(alignment: .firstTextBaseline, spacing: 16) {
+      VStack(alignment: .leading, spacing: 3) {
+        Text(provider.name)
+          .font(.title3.weight(.semibold))
+          .lineLimit(1)
+
+        if let snapshot {
+          Text(headerStatus(snapshot))
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+        }
+      }
+
+      Spacer(minLength: 16)
+
+      if let scope = snapshot?.scope.label, !scope.isEmpty {
+        Text(scope)
+          .font(.subheadline)
+          .foregroundStyle(.secondary)
+          .lineLimit(1)
+          .help(scope)
+      }
+    }
+  }
+
+  private var emptyState: some View {
+    Text(provider.primary)
+      .font(.title.weight(.semibold))
+      .foregroundStyle(.secondary)
+      .lineLimit(2)
+      .minimumScaleFactor(0.8)
+      .frame(maxWidth: .infinity, minHeight: 54, alignment: .leading)
+  }
+
+  @ViewBuilder
+  private func primaryUsage(_ cards: [ProviderUsageCard]) -> some View {
+    if cards.count > 1 {
+      ViewThatFits(in: .horizontal) {
+        HStack(alignment: .top, spacing: 22) {
+          DashisPrimaryUsageMetric(card: cards[0])
+            .frame(minWidth: 240, maxWidth: .infinity)
+          Divider()
+          DashisPrimaryUsageMetric(card: cards[1])
+            .frame(minWidth: 240, maxWidth: .infinity)
+        }
+
+        VStack(alignment: .leading, spacing: 16) {
+          DashisPrimaryUsageMetric(card: cards[0])
+          Divider()
+          DashisPrimaryUsageMetric(card: cards[1])
+        }
+      }
+    } else if let card = cards.first {
+      DashisPrimaryUsageMetric(card: card)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+  }
+
+  private func notices(_ snapshot: ProviderSnapshot) -> some View {
+    VStack(alignment: .leading, spacing: 12) {
+      ForEach(snapshot.warnings) { warning in
+        DashisProviderNotice(
+          title: "Warning",
+          message: warning.message,
+          symbolName: "exclamationmark.triangle",
+          tone: .watch
+        )
+      }
+      ForEach(snapshot.partialFailures) { failure in
+        DashisProviderNotice(
+          title: failure.operation,
+          message: failure.message,
+          symbolName: "xmark.octagon",
+          tone: .incident
+        )
+      }
+    }
+  }
+
+  private func additionalUsage(_ cards: [ProviderUsageCard]) -> some View {
+    DisclosureGroup("More usage data") {
+      VStack(spacing: 0) {
+        ForEach(Array(cards.enumerated()), id: \.offset) { index, card in
+          DashisSecondaryUsageRow(card: card)
+          if index < cards.count - 1 {
+            Divider()
+          }
+        }
+      }
+      .padding(.top, 8)
+    }
+  }
+
+  private func dataDetails(_ metadata: [DashisProviderLine]) -> some View {
+    DisclosureGroup("Data details") {
+      VStack(spacing: 0) {
+        ForEach(Array(metadata.enumerated()), id: \.offset) { index, line in
+          DashisMetadataRow(line: line)
+          if index < metadata.count - 1 {
+            Divider()
+          }
+        }
+      }
+      .padding(.top, 8)
+    }
+  }
+
+  private func headerStatus(_ snapshot: ProviderSnapshot) -> String {
+    var labels = [FreshnessPolicy.freshness(of: snapshot).label]
+    if snapshot.sourceKind != .officialDirect {
+      labels.append(snapshot.sourceKind.label)
+    }
+    return labels.joined(separator: " · ")
+  }
+}
+
+private struct DashisPrimaryUsageMetric: View {
   let card: ProviderUsageCard
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 14) {
-      HStack(alignment: .firstTextBaseline, spacing: 10) {
+    VStack(alignment: .leading, spacing: 10) {
+      HStack(alignment: .firstTextBaseline, spacing: 8) {
         Text(card.title)
-          .font(DashisType.body(14, .regular))
-          .foregroundStyle(DashisTheme.secondaryText(colorScheme))
+          .font(.headline)
           .lineLimit(2)
         Spacer(minLength: 8)
         if let statusLabel = card.statusLabel {
           Text(statusLabel)
-            .font(DashisType.caption(11, .semibold))
+            .font(.caption.weight(.medium))
             .foregroundStyle(DashisTheme.statusColor(card.tone))
         }
       }
 
-      HStack(alignment: .firstTextBaseline, spacing: 5) {
+      HStack(alignment: .firstTextBaseline, spacing: 6) {
         Text(card.headline)
-          .font(DashisType.title(32))
+          .font(.largeTitle.weight(.semibold))
           .monospacedDigit()
         if !card.descriptor.isEmpty {
           Text(card.descriptor)
-            .font(DashisType.body(17))
-            .foregroundStyle(DashisTheme.secondaryText(colorScheme))
+            .font(.title3)
+            .foregroundStyle(.secondary)
         }
       }
       .lineLimit(1)
       .minimumScaleFactor(0.78)
 
       if let progress = card.progressFraction {
-        GeometryReader { geometry in
-          ZStack(alignment: .leading) {
-            Capsule()
-              .fill(DashisTheme.mutedSurface(colorScheme))
-            if progress > 0 {
-              Capsule()
-                .fill(progressColor(progress))
-                .frame(width: geometry.size.width * progress)
-            }
-          }
-        }
-        .frame(height: 8)
-        .accessibilityHidden(true)
+        ProgressView(value: progress)
+          .progressViewStyle(.linear)
+          .tint(DashisUsageProgressStyle.color(for: card, progress: progress))
+          .accessibilityLabel(card.title)
       }
 
       if let supportingText = card.supportingText {
         Text(supportingText)
-          .font(DashisType.caption(13, .regular))
-          .foregroundStyle(DashisTheme.tertiaryText(colorScheme))
+          .font(.footnote)
+          .foregroundStyle(.secondary)
           .lineLimit(2)
       }
-
-      Spacer(minLength: 0)
     }
-    .padding(22)
-    .frame(maxWidth: .infinity, minHeight: 166, alignment: .topLeading)
-    .dashisCardSurface(cornerRadius: 17)
+    .frame(maxWidth: .infinity, minHeight: 116, alignment: .topLeading)
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(card.title)
     .accessibilityValue(accessibilityValue)
@@ -281,8 +684,70 @@ private struct DashisUsageCard: View {
     .compactMap { $0 }
     .joined(separator: ". ")
   }
+}
 
-  private func progressColor(_ progress: Double) -> Color {
+private struct DashisSecondaryUsageRow: View {
+  let card: ProviderUsageCard
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 7) {
+      HStack(alignment: .firstTextBaseline, spacing: 12) {
+        Text(card.title)
+          .lineLimit(2)
+
+        Spacer(minLength: 12)
+
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+          Text(card.headline)
+            .font(.body.weight(.semibold))
+            .monospacedDigit()
+          if !card.descriptor.isEmpty {
+            Text(card.descriptor)
+              .foregroundStyle(.secondary)
+          }
+        }
+        .lineLimit(1)
+
+        if let statusLabel = card.statusLabel {
+          Text(statusLabel)
+            .font(.caption.weight(.medium))
+            .foregroundStyle(DashisTheme.statusColor(card.tone))
+        }
+      }
+
+      if let progress = card.progressFraction {
+        ProgressView(value: progress)
+          .progressViewStyle(.linear)
+          .tint(DashisUsageProgressStyle.color(for: card, progress: progress))
+          .accessibilityLabel(card.title)
+      }
+
+      if let supportingText = card.supportingText {
+        Text(supportingText)
+          .font(.footnote)
+          .foregroundStyle(.secondary)
+          .lineLimit(2)
+      }
+    }
+    .padding(.vertical, 8)
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(card.title)
+    .accessibilityValue(accessibilityValue)
+  }
+
+  private var accessibilityValue: String {
+    [
+      [card.headline, card.descriptor].filter { !$0.isEmpty }.joined(separator: " "),
+      card.supportingText,
+      card.statusLabel
+    ]
+    .compactMap { $0 }
+    .joined(separator: ". ")
+  }
+}
+
+private enum DashisUsageProgressStyle {
+  static func color(for card: ProviderUsageCard, progress: Double) -> Color {
     if card.tone == .incident { return DashisTheme.bad }
     if card.tone == .watch { return DashisTheme.warn }
     switch card.progressKind {
@@ -301,7 +766,6 @@ private struct DashisUsageCard: View {
 }
 
 private struct DashisProviderNotice: View {
-  @Environment(\.colorScheme) private var colorScheme
   let title: String
   let message: String
   let symbolName: String
@@ -314,10 +778,10 @@ private struct DashisProviderNotice: View {
         .accessibilityHidden(true)
       VStack(alignment: .leading, spacing: 3) {
         Text(title)
-          .font(DashisType.body(14, .semibold))
+          .font(.body.weight(.semibold))
         Text(message)
-          .font(DashisType.body(14))
-          .foregroundStyle(DashisTheme.secondaryText(colorScheme))
+          .font(.body)
+          .foregroundStyle(.secondary)
           .fixedSize(horizontal: false, vertical: true)
       }
     }
@@ -330,19 +794,14 @@ private struct DashisProviderNotice: View {
 }
 
 private struct DashisMetadataRow: View {
-  @Environment(\.colorScheme) private var colorScheme
   let line: DashisProviderLine
 
   var body: some View {
-    HStack(alignment: .firstTextBaseline, spacing: 20) {
-      Text(line.title)
-        .foregroundStyle(DashisTheme.secondaryText(colorScheme))
-      Spacer(minLength: 12)
+    LabeledContent(line.title) {
       Text(line.value)
-        .foregroundStyle(DashisTheme.primaryText(colorScheme))
         .multilineTextAlignment(.trailing)
     }
-    .font(DashisType.body(14))
+    .font(.body)
     .padding(.vertical, 9)
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(line.title)
@@ -375,59 +834,66 @@ struct CodexNativeControls: View {
   @ObservedObject var store: DashisProviderStore
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 14) {
-      HStack(spacing: 10) {
-        Button {
-          Task { await store.checkCodexDesktop() }
-        } label: {
-          Label("Check desktop usage", systemImage: "person.crop.circle.badge.checkmark")
-        }
-        .buttonStyle(.borderedProminent)
-        .disabled(store.isLoading("codex"))
+    Section {
+      LabeledContent("Account", value: "Current desktop session")
 
+      DashisFormPrimaryAction(
+        title: "Check Desktop Usage",
+        loadingTitle: "Checking",
+        isLoading: store.isLoading("codex"),
+        isDisabled: false
+      ) {
+        Task { await store.checkCodexDesktop() }
+      }
+    } header: {
+      HStack {
+        Text("Personal usage")
+        Spacer()
         if shouldShowClear {
-          Button {
-            store.clearCodexSession()
+          Menu {
+            Button("Clear Codex Data", role: .destructive) {
+              store.clearCodexSession()
+            }
           } label: {
-            Label("Clear Codex data", systemImage: "xmark.circle")
+            Image(systemName: "ellipsis")
+              .accessibilityLabel("More actions")
           }
-          .buttonStyle(.bordered)
+          .menuStyle(.borderlessButton)
+          .fixedSize()
         }
       }
-
-      Divider()
-
-      DisclosureGroup("Workspace analytics") {
-        VStack(alignment: .leading, spacing: 12) {
-          LabeledContent("Workspace ID") {
-            TextField("", text: $store.codexWorkspaceID)
-              .textFieldStyle(.roundedBorder)
-              .frame(maxWidth: 420)
-              .accessibilityLabel("Workspace ID")
-          }
-          LabeledContent("Analytics key") {
-            SecureField("", text: $store.codexAnalyticsAPIKey)
-              .textFieldStyle(.roundedBorder)
-              .frame(maxWidth: 420)
-              .accessibilityLabel("Analytics key")
-          }
-          Stepper(
-            "Window: \(store.codexAnalyticsDays) days",
-            value: $store.codexAnalyticsDays,
-            in: 1...90
-          )
-          .font(DashisType.body(14))
-          Button {
-            Task { await store.checkCodexAnalytics() }
-          } label: {
-            Label("Check workspace analytics", systemImage: "chart.bar.xaxis")
-          }
-          .buttonStyle(.bordered)
-        }
-        .padding(.top, 10)
-      }
-      .disabled(store.isLoading("codex"))
     }
+
+    Section("Workspace analytics") {
+      LabeledContent("Workspace ID") {
+        TextField("", text: $store.codexWorkspaceID)
+          .textFieldStyle(.roundedBorder)
+          .frame(width: DashisProviderDetailLayout.fieldWidth)
+          .accessibilityLabel("Workspace ID")
+      }
+      LabeledContent("Analytics key") {
+        SecureField("", text: $store.codexAnalyticsAPIKey)
+          .textFieldStyle(.roundedBorder)
+          .frame(width: DashisProviderDetailLayout.fieldWidth)
+          .accessibilityLabel("Analytics key")
+      }
+      Stepper(
+        "Window: \(store.codexAnalyticsDays) days",
+        value: $store.codexAnalyticsDays,
+        in: 1...90
+      )
+      .font(DashisType.body(14))
+
+      HStack {
+        Spacer()
+        Button("Check Workspace Analytics") {
+          Task { await store.checkCodexAnalytics() }
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.large)
+      }
+    }
+    .disabled(store.isLoading("codex"))
   }
 
   private var shouldShowClear: Bool {
@@ -442,67 +908,77 @@ struct ClaudeNativeControls: View {
   @ObservedObject var store: DashisProviderStore
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 12) {
-      if store.claudePatchSummary == nil
-        && !["Bridge not configured", "Settings change cancelled."].contains(store.claudeConnectionMessage) {
-        Text(store.claudeConnectionMessage)
-          .font(DashisType.body(14))
-          .foregroundStyle(.secondary)
+    Section {
+      LabeledContent("Source", value: "Claude Code status line")
+
+      DashisFormPrimaryAction(
+        title: "Reload Usage",
+        loadingTitle: "Reloading",
+        isLoading: store.isLoading("claude"),
+        isDisabled: false
+      ) {
+        Task { await store.reloadClaudeSnapshot() }
+      }
+    } header: {
+      HStack {
+        Text("Usage snapshot")
+        Spacer()
+        if store.snapshots[ProviderID(rawValue: "claude")] != nil {
+          Menu {
+            Button("Clear Loaded Data", role: .destructive) {
+              store.clearClaudeLoadedSnapshot()
+            }
+          } label: {
+            Image(systemName: "ellipsis")
+              .accessibilityLabel("More actions")
+          }
+          .menuStyle(.borderlessButton)
+          .fixedSize()
+        }
+      }
+    }
+
+    Section {
+      if !["Bridge not configured", "Settings change cancelled."].contains(store.claudeConnectionMessage) {
+        LabeledContent("Status") {
+          Text(store.claudeConnectionMessage)
+            .foregroundStyle(.secondary)
+        }
       }
 
-      HStack(spacing: 10) {
-        Button {
-          store.prepareClaudeConnect()
-        } label: {
-          Label("Preview connect", systemImage: "link.badge.plus")
-        }
-        .buttonStyle(.borderedProminent)
-
-        Button {
+      HStack {
+        Spacer()
+        Button("Preview Disconnect") {
           store.prepareClaudeDisconnect()
-        } label: {
-          Label("Preview disconnect", systemImage: "link.badge.minus")
+        }
+        .buttonStyle(.bordered)
+
+        Button("Preview Connect") {
+          store.prepareClaudeConnect()
         }
         .buttonStyle(.bordered)
       }
+    } header: {
+      Text("Claude Code bridge")
+    }
 
-      if let summary = store.claudePatchSummary {
-        VStack(alignment: .leading, spacing: 10) {
-          Text(summary)
-            .font(DashisType.body(14))
-          HStack(spacing: 10) {
-            Button("Apply change") {
-              store.applyClaudePendingPatch()
-            }
-            .buttonStyle(.borderedProminent)
-            Button("Cancel") {
-              store.cancelClaudePendingPatch()
-            }
-            .buttonStyle(.bordered)
-          }
-        }
-        .padding(12)
-        .background(.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-      }
+    if let summary = store.claudePatchSummary {
+      Section("Pending settings change") {
+        Text(summary)
+          .fixedSize(horizontal: false, vertical: true)
 
-      Divider()
-
-      HStack(spacing: 10) {
-        Button {
-          Task { await store.reloadClaudeSnapshot() }
-        } label: {
-          Label("Reload snapshot", systemImage: "arrow.clockwise")
-        }
-        .buttonStyle(.borderedProminent)
-        .disabled(store.isLoading("claude"))
-
-        if store.snapshots[ProviderID(rawValue: "claude")] != nil {
-          Button {
-            store.clearClaudeLoadedSnapshot()
-          } label: {
-            Label("Clear loaded data", systemImage: "xmark.circle")
+        HStack {
+          Spacer()
+          Button("Cancel") {
+            store.cancelClaudePendingPatch()
           }
           .buttonStyle(.bordered)
+
+          Button("Apply Change") {
+            store.applyClaudePendingPatch()
+          }
+          .buttonStyle(.borderedProminent)
+          .controlSize(.large)
         }
       }
     }
@@ -513,118 +989,128 @@ struct GoogleNativeControls: View {
   @ObservedObject var store: DashisProviderStore
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 12) {
+    Section {
       Picker("Mode", selection: $store.googleMode) {
         ForEach(DashisGoogleMode.allCases) { mode in
           Text(mode.rawValue).tag(mode)
         }
       }
       .pickerStyle(.segmented)
-      .labelsHidden()
+      .frame(width: DashisProviderDetailLayout.fieldWidth)
       .accessibilityLabel("Google mode")
       .disabled(store.isLoading("google"))
-
-      if store.googleMode == .consumer {
-        Button {
-          store.openGoogleConsumerQuotaPage()
-        } label: {
-          Label("Open Gemini official page", systemImage: "arrow.up.right.square")
-        }
-        .buttonStyle(.borderedProminent)
-        .help("Antigravity users can check quota with /credits.")
-
-        DisclosureGroup("Manual reading") {
-          VStack(alignment: .leading, spacing: 10) {
-            LabeledContent("Used") {
-              TextField("", text: $store.googleManualUsed)
-                .textFieldStyle(.roundedBorder)
-                .accessibilityLabel("Used")
-            }
-            LabeledContent("Limit") {
-              TextField("", text: $store.googleManualLimit)
-                .textFieldStyle(.roundedBorder)
-                .accessibilityLabel("Limit")
-            }
-            LabeledContent("Remaining") {
-              TextField("", text: $store.googleManualRemaining)
-                .textFieldStyle(.roundedBorder)
-                .accessibilityLabel("Remaining")
-            }
-            LabeledContent("Unit") {
-              TextField("", text: $store.googleManualUnit)
-                .textFieldStyle(.roundedBorder)
-                .accessibilityLabel("Unit")
-            }
-            Button {
-              Task { await store.recordGoogleManualReading() }
-            } label: {
-              Label("Record reading", systemImage: "square.and.pencil")
-            }
-            .buttonStyle(.bordered)
-          }
-          .padding(.top, 10)
-        }
-
+    } header: {
+      HStack {
+        Text("Source")
+        Spacer()
         if shouldShowClear {
-          Button {
-            store.clearGoogleSession()
+          Menu {
+            Button("Clear Google Data", role: .destructive) {
+              store.clearGoogleSession()
+            }
           } label: {
-            Label("Clear Google data", systemImage: "xmark.circle")
+            Image(systemName: "ellipsis")
+              .accessibilityLabel("More actions")
           }
-          .buttonStyle(.bordered)
+          .menuStyle(.borderlessButton)
+          .fixedSize()
         }
-      } else {
+      }
+    }
+
+    if store.googleMode == .consumer {
+      Section {
+        LabeledContent("Quota") {
+          Button("Open Gemini Official Page") {
+            store.openGoogleConsumerQuotaPage()
+          }
+          .buttonStyle(.borderless)
+        }
+      } header: {
+        Text("Gemini subscription")
+      }
+
+      Section {
+        LabeledContent("Used") {
+          TextField("", text: $store.googleManualUsed)
+            .textFieldStyle(.roundedBorder)
+            .frame(width: DashisProviderDetailLayout.fieldWidth)
+            .accessibilityLabel("Used")
+        }
+        LabeledContent("Limit") {
+          TextField("", text: $store.googleManualLimit)
+            .textFieldStyle(.roundedBorder)
+            .frame(width: DashisProviderDetailLayout.fieldWidth)
+            .accessibilityLabel("Limit")
+        }
+        LabeledContent("Remaining") {
+          TextField("", text: $store.googleManualRemaining)
+            .textFieldStyle(.roundedBorder)
+            .frame(width: DashisProviderDetailLayout.fieldWidth)
+            .accessibilityLabel("Remaining")
+        }
+        LabeledContent("Unit") {
+          TextField("", text: $store.googleManualUnit)
+            .textFieldStyle(.roundedBorder)
+            .frame(width: DashisProviderDetailLayout.fieldWidth)
+            .accessibilityLabel("Unit")
+        }
+
+        DashisFormPrimaryAction(
+          title: "Record Reading",
+          loadingTitle: "Recording",
+          isLoading: store.isLoading("google"),
+          isDisabled: false
+        ) {
+          Task { await store.recordGoogleManualReading() }
+        }
+      } header: {
+        Text("Manual reading")
+      }
+    } else {
+      Section {
         LabeledContent("OAuth client ID") {
           TextField("", text: $store.googleOAuthClientID)
             .textFieldStyle(.roundedBorder)
+            .frame(width: DashisProviderDetailLayout.fieldWidth)
             .accessibilityLabel("OAuth client ID")
         }
-        .disabled(store.isLoading("google"))
         LabeledContent("Project ID or number") {
           TextField("", text: $store.googleProjectID)
             .textFieldStyle(.roundedBorder)
+            .frame(width: DashisProviderDetailLayout.fieldWidth)
             .accessibilityLabel("Project ID or number")
         }
-        .disabled(store.isLoading("google"))
         LabeledContent("Quota IDs (optional)") {
           TextField("", text: $store.googleQuotaIDs)
             .textFieldStyle(.roundedBorder)
+            .frame(width: DashisProviderDetailLayout.fieldWidth)
             .accessibilityLabel("Quota IDs, optional")
         }
-        .disabled(store.isLoading("google"))
+
         if shouldShowGoogleConnectionMessage {
-          Text(store.googleConnectionMessage)
-            .font(DashisType.body(14))
-            .foregroundStyle(.secondary)
+          LabeledContent("Status") {
+            Text(store.googleConnectionMessage)
+              .foregroundStyle(.secondary)
+          }
         }
 
-        HStack(spacing: 10) {
-          Button {
-            Task { await store.connectGoogleProject() }
-          } label: {
-            Label("Connect Google", systemImage: "person.crop.circle.badge.checkmark")
-          }
-          .buttonStyle(.borderedProminent)
-          .disabled(store.isLoading("google"))
-
-          Button {
+        DashisFormPrimaryAction(
+          title: store.isGoogleProjectConnected ? "Check Quotas" : "Connect Google",
+          loadingTitle: store.isGoogleProjectConnected ? "Checking" : "Connecting",
+          isLoading: store.isLoading("google"),
+          isDisabled: false
+        ) {
+          if store.isGoogleProjectConnected {
             Task { await store.checkGoogleProject() }
-          } label: {
-            Label("Check quotas", systemImage: "chart.bar")
-          }
-          .buttonStyle(.bordered)
-          .disabled(store.isLoading("google") || !store.isGoogleProjectConnected)
-
-          if shouldShowClear {
-            Button {
-              store.clearGoogleSession()
-            } label: {
-              Label("Clear Google session", systemImage: "xmark.circle")
-            }
-            .buttonStyle(.bordered)
+          } else {
+            Task { await store.connectGoogleProject() }
           }
         }
+      } header: {
+        Text("Google Cloud project")
       }
+      .disabled(store.isLoading("google"))
     }
   }
 
@@ -650,112 +1136,111 @@ struct OpenRouterNativeControls: View {
   @State private var showsClearConfirmation = false
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 12) {
-      Picker("Mode", selection: $store.openRouterMode) {
-        ForEach(DashisOpenRouterMode.allCases) { mode in
-          Text(mode.rawValue).tag(mode)
+    Group {
+      Section {
+        Picker("Mode", selection: $store.openRouterMode) {
+          ForEach(DashisOpenRouterMode.allCases) { mode in
+            Text(mode.rawValue).tag(mode)
+          }
+        }
+        .pickerStyle(.segmented)
+        .frame(width: DashisProviderDetailLayout.fieldWidth)
+        .accessibilityLabel("OpenRouter mode")
+        .disabled(store.isLoading("openrouter"))
+      } header: {
+        HStack {
+          Text("Source")
+          Spacer()
+          if shouldShowClear {
+            Menu {
+              Button("Clear Local Session", role: .destructive) {
+                showsClearConfirmation = true
+              }
+            } label: {
+              Image(systemName: "ellipsis")
+                .accessibilityLabel("More actions")
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+          }
         }
       }
-      .pickerStyle(.segmented)
-      .labelsHidden()
-      .accessibilityLabel("OpenRouter mode")
-      .disabled(store.isLoading("openrouter"))
 
       if store.openRouterMode == .singleKey {
-        if shouldShowOpenRouterConnectionMessage {
-          Text(store.openRouterConnectionMessage)
-            .font(DashisType.body(14))
-            .foregroundStyle(.secondary)
-        }
+        Section {
+          if shouldShowOpenRouterConnectionMessage {
+            LabeledContent("Status") {
+              Text(store.openRouterConnectionMessage)
+                .foregroundStyle(.secondary)
+            }
+          }
 
-        HStack(spacing: 10) {
-          if store.isOpenRouterOAuthConnected {
-            Button {
+          DashisFormPrimaryAction(
+            title: store.isOpenRouterOAuthConnected ? "Check Key Limit" : "Connect OpenRouter",
+            loadingTitle: store.isOpenRouterOAuthConnected ? "Checking" : "Connecting",
+            isLoading: store.isLoading("openrouter"),
+            isDisabled: false
+          ) {
+            if store.isOpenRouterOAuthConnected {
               Task { await store.checkOpenRouterOAuthKey() }
-            } label: {
-              Label("Check key limit", systemImage: "gauge")
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(store.isLoading("openrouter"))
-          } else {
-            Button {
+            } else {
               Task { await store.connectOpenRouterOAuth() }
-            } label: {
-              Label("Connect OpenRouter", systemImage: "link")
             }
-            .buttonStyle(.borderedProminent)
-            .disabled(store.isLoading("openrouter"))
           }
-
-          if shouldShowClear {
-            Button(role: .destructive) {
-              showsClearConfirmation = true
-            } label: {
-              Label("Clear local session", systemImage: "xmark.circle")
-            }
-            .buttonStyle(.bordered)
-          }
+        } header: {
+          Text("Single key")
         }
       } else {
-        LabeledContent("Management key · session only") {
-          SecureField("", text: $store.openRouterManagementAPIKey)
-            .textFieldStyle(.roundedBorder)
-            .accessibilityLabel("OpenRouter account management key, kept for this app session only")
-            .help("OpenRouter requires a management key for account-wide credits, activity, and analytics.")
-        }
-        .disabled(store.isLoading("openrouter"))
+        Section {
+          LabeledContent("Management key") {
+            SecureField("", text: $store.openRouterManagementAPIKey)
+              .textFieldStyle(.roundedBorder)
+              .frame(width: DashisProviderDetailLayout.fieldWidth)
+              .accessibilityLabel("OpenRouter account management key, kept for this app session only")
+              .help("OpenRouter requires a management key for account-wide credits, activity, and analytics.")
+          }
 
-        Link(
-          "Create a management key in OpenRouter",
-          destination: URL(string: "https://openrouter.ai/settings/management-keys")!
-        )
-        .font(DashisType.body(13))
-
-        Text("This high-privilege key stays in memory. Dashis only reads account usage and never creates, changes, or deletes your OpenRouter keys; existing model traffic keeps using its current keys.")
-          .font(DashisType.body(13))
-          .foregroundStyle(.secondary)
-          .fixedSize(horizontal: false, vertical: true)
-
-        DisclosureGroup("Account analysis options") {
-          VStack(alignment: .leading, spacing: 10) {
-            LabeledContent("Generation ID (optional)") {
-              TextField("", text: $store.openRouterGenerationID)
-                .textFieldStyle(.roundedBorder)
-                .accessibilityLabel("Generation ID, optional")
-            }
-            Stepper(
-              "Analytics window: \(store.openRouterAnalyticsDays) days",
-              value: $store.openRouterAnalyticsDays,
-              in: 1...90
+          LabeledContent("Create key") {
+            Link(
+              "Open OpenRouter",
+              destination: URL(string: "https://openrouter.ai/settings/management-keys")!
             )
-            .font(DashisType.body(14))
           }
-          .padding(.top, 8)
+        } header: {
+          Text("Account access")
         }
         .disabled(store.isLoading("openrouter"))
 
-        HStack(spacing: 10) {
-          Button {
+        Section {
+          LabeledContent("Generation ID (optional)") {
+            TextField("", text: $store.openRouterGenerationID)
+              .textFieldStyle(.roundedBorder)
+              .frame(width: DashisProviderDetailLayout.fieldWidth)
+              .accessibilityLabel("Generation ID, optional")
+          }
+          Stepper(
+            "Analytics window: \(store.openRouterAnalyticsDays) days",
+            value: $store.openRouterAnalyticsDays,
+            in: 1...90
+          )
+          .font(DashisType.body(14))
+
+          DashisFormPrimaryAction(
+            title: "Check Whole Account",
+            loadingTitle: "Checking",
+            isLoading: store.isLoading("openrouter"),
+            isDisabled: false
+          ) {
             Task { await store.checkOpenRouterAccount() }
-          } label: {
-            Label("Check whole account", systemImage: "network")
           }
-          .buttonStyle(.borderedProminent)
-          .disabled(store.isLoading("openrouter"))
-
-          if shouldShowClear {
-            Button(role: .destructive) {
-              showsClearConfirmation = true
-            } label: {
-              Label("Clear local session", systemImage: "xmark.circle")
-            }
-            .buttonStyle(.bordered)
-          }
+        } header: {
+          Text("Account analysis")
         }
+        .disabled(store.isLoading("openrouter"))
 
-        Divider()
-
-        OpenRouterRecentCallsSection(store: store)
+        Section("Recent calls") {
+          OpenRouterRecentCallsSection(store: store)
+        }
       }
     }
     .confirmationDialog(
@@ -797,41 +1282,27 @@ private struct OpenRouterRecentCallsSection: View {
   @ObservedObject var store: DashisProviderStore
 
   var body: some View {
-    DisclosureGroup("Recent calls · metadata only") {
-      VStack(alignment: .leading, spacing: 12) {
-        Text("Loads up to 20 account-wide call rows from beta analytics. Dashis requests metadata only and never requests prompts or responses; OpenRouter may truncate the result.")
-          .font(DashisType.body(13))
-          .foregroundStyle(.secondary)
-          .fixedSize(horizontal: false, vertical: true)
+    VStack(alignment: .leading, spacing: 12) {
+      Stepper(
+        "Call window: \(store.openRouterRecentCallsDays) day\(store.openRouterRecentCallsDays == 1 ? "" : "s")",
+        value: $store.openRouterRecentCallsDays,
+        in: 1...30
+      )
+      .font(DashisType.body(14))
+      .disabled(store.isLoading("openrouter"))
 
-        Stepper(
-          "Call window: \(store.openRouterRecentCallsDays) day\(store.openRouterRecentCallsDays == 1 ? "" : "s")",
-          value: $store.openRouterRecentCallsDays,
-          in: 1...30
-        )
-        .font(DashisType.body(14))
-        .disabled(store.isLoading("openrouter"))
-
-        Button {
+      HStack {
+        Spacer()
+        Button("Load Call Metadata") {
           Task { await store.loadOpenRouterRecentCalls() }
-        } label: {
-          Label("Load call metadata", systemImage: "list.bullet.rectangle")
         }
         .buttonStyle(.bordered)
+        .controlSize(.large)
         .disabled(store.isLoading("openrouter") || !store.canLoadOpenRouterRecentCalls)
-
-        if !store.canLoadOpenRouterRecentCalls,
-           store.openRouterRecentCallsState == .idle {
-          Text("Check the whole account successfully before loading call metadata.")
-            .font(DashisType.body(13))
-            .foregroundStyle(.secondary)
-        }
-
-        stateContent
       }
-      .padding(.top, 10)
+
+      stateContent
     }
-    .font(DashisType.body(14, .medium))
   }
 
   @ViewBuilder private var stateContent: some View {

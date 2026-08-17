@@ -4,19 +4,29 @@
 
 Dashis 当前是 macOS 原生 SwiftUI、provider-first 的 AI 用量 dashboard，不使用 `WKWebView`、Web dashboard、Node gateway 或 localhost 业务服务。
 
-- Xcode 工程包含三个 target：macOS App `Dashis`、命令行 helper `ClaudeStatusLineHelper`、测试 target `DashisTests`。
-- shared scheme `Dashis` 构建 App 与 helper，并在 Test action 运行 `DashisTests`。
-- Dashboard 固定展示 Codex、Claude、Google AI、OpenRouter 四个内置 provider；Sidebar 只提供 Dashboard 与四个 provider 路由，不提供说明型 Settings 或动态 Add provider。
+- Xcode 工程包含四个 target：macOS App `Dashis`、命令行 helper `ClaudeStatusLineHelper`、XPC service `DashisCollectorWorker`、测试 target `DashisTests`。
+- shared scheme `Dashis` 构建 App、helper 与嵌入式 Worker，并在 Test action 运行 `DashisTests`。
+- 唯一外层 `NavigationSplitView` 的 Sidebar 使用 macOS 原生 `List(selection:)`、系统 section 与选中态，主 Sidebar 不提供搜索；列表顶部保留 Dashis 已有 28 pt semibold Serif 品牌及原位置，主 Sidebar 固定为 218 pt，再显示 Dashboard、唯一顶层 Settings 入口和当前开启的 provider。Dashboard 通过原生 `ScrollView` 与自适应 `LazyVGrid` 展示同一可见子集的统一系统 `GroupBox` 卡片，provider 路由只打开纯数据主卡；Settings 在外层 detail 内用固定 220 pt 的原生搜索/List 面板承载完整 34-provider catalog、每项原生显示开关、四个 native flow 和其余 30 个 provider 的 41 条 CodexBar live explicit route 配置。Settings 不再创建第二个 split/navigation container，也不提供重复的 Providers 页面或动态 Add provider。
 - `script/build_and_run.sh` 是本地 build/run 入口；`.codex/environments/environment.toml` 的 Run action 调用同一脚本。
-- 当前没有 iOS target、后端、数据库、长期凭据存储或部署配置；这些边界仍为 `UNKNOWN`。
+- `Vendor/CodexBarCore` 与 `Packages/DashisCodexBarCollector` 已接入后台 build graph：App target 只链接 Foundation-only contract，live collector/Core 只链接独立 XPC Worker；Store/UI 通过 exact route、wire v4 和 reverse configuration broker 消费 live observation，再投影为现有 snapshot UI。
+- 当前没有 iOS target、远程后端、数据库、长期凭据存储或部署配置；这些边界仍为 `UNKNOWN`。
 
 ## 目标分层
 
 ```text
 DashisApp / DashboardView
+  -> display navigation
+       Dashboard adaptive visible-provider card grid -> typed ProviderSnapshot priorities
+       provider data-only page -> one full typed ProviderSnapshot card
+  -> Settings workspace
+       second-level complete 34-provider menu + native visibility switches
+       native / collector grouped configuration forms
   -> DashisProviderStore
+       -> DashisProviderCatalog（34 reviewed entries；4 native / 30 collector）
+       persistent non-sensitive hidden-provider IDs / visibleProviders projection
        UI state / session-only inputs / explicit user actions
-       generation guards / Clear / snapshot-to-summary/detail projection
+       route selection / one-run config / consent / generation guards / Clear
+       Observation -> Snapshot -> summary/detail projection
   -> DashisProviderService
        composition root only
        -> CodexUsageClient
@@ -26,6 +36,12 @@ DashisApp / DashboardView
        -> OpenRouterUsageClient
        -> Google ProviderConnectionCoordinator
        -> OpenRouter ProviderConnectionCoordinator
+       -> ProviderCollectionRuntime
+            -> ProviderRouteRegistry
+            -> ProviderRunCoordinator
+            -> NativeSnapshotObservationBridge
+            -> CollectorOutcomeValidator
+            -> CollectorWorkerClient + connection-scoped configuration broker
 
 Shared provider foundation
   -> ProviderSnapshot / QuotaWindow / ProviderBalance / ProviderMetric
@@ -33,9 +49,29 @@ Shared provider foundation
   -> ProviderJSON
   -> ProviderHTTPClient -> ProviderEndpointPolicy
   -> LoopbackOAuthCoordinator / ProviderOAuthSupport
+
+App target
+  -> DashisCollectorContract
+       provider/request/outcome/window/freshness/policy DTO
+       rollout catalog + 41-route live catalog
+       bounded wire v4 + reverse configuration broker
+  -> NSXPCConnection
+       -> embedded DashisCollectorWorker.xpc
+            -> DashisCollectorContract
+            -> CodexBarCollector
+                 per-operation exact request/planning/single-strategy policy
+                 account resolver + upstream context + neutral result/artifact mapper
+            -> vendored CodexBarCore v0.45.2
+                 63 provider descriptors / strategies / host probes
 ```
 
-`DashisProviderService` 不解析 provider 响应、不持久化凭据，也不定义 endpoint；它只组装 adapter 和连接协调器。各 adapter 先生成结构化 `ProviderSnapshot`，Store 再统一投影 Dashboard 摘要。provider detail 直接从 snapshot 生成类型化 `ProviderVisualization` / `ProviderUsageCard`，避免解析旧 key/value 文案或把 UI 文案当成数据模型。
+`DashisProviderService` 不解析 provider 响应、不持久化凭据，也不定义 endpoint；它只组装 adapter 和连接协调器。各 adapter 先生成结构化 `ProviderSnapshot`，Store 再统一投影 Dashboard 卡片与详情主卡。两处都直接从 snapshot 生成类型化 `ProviderVisualization` / `ProviderUsageCard`，避免解析旧 key/value 文案或把 UI 文案当成数据模型。
+
+CodexBar 已作为后台 runtime 接到 `DashisProviderService`，但不是现有 Store 的第五个 `ProviderUsageClient`。30 个 collector provider 从 Settings 表单向 Store 提交 exact route 与本次临时配置，runtime 经 XPC Worker 执行单一 strategy，再由不可绕过的 outcome validator 映射为 Dashis-owned `ProviderObservation`，最后投影为现有 `ProviderSnapshot` 并由展示页消费。当前四个 native 设置仍走既有 adapter。`UsageSnapshot`、CodexBar Core 类型和 Core 自有 UI/config 不得渗入 App target、Store 或视图。
+
+`ProviderObservation` 是接线后的 canonical fact model，`ProviderSnapshot` 仍是当前 UI projection。Production route registry 保留四个 native provider 的七条 native route，并追加 `CollectorLiveRouteCatalog` 的 41 条 enabled collector route；Worker 握手报告 `liveRouteCount = 41`。`CollectorRolloutCatalog` 仍登记 34 个 provider、52 条 exact strategy 与 50 条 explicit-source staging binding；live catalog 排除四个 native provider 的重叠路径和三条 automatic-only strategy，只把其余 30 个 provider 的明确 binding 提升为 route。
+
+`DashisProviderCatalog` 把 `CollectorRolloutCatalog.selectedProviderIDs` 投影为 reviewed provider 目录顺序，并从 `CollectorLiveRouteCatalog` 生成每个 collector provider 的 exact methods 与默认 method。它不保存 credential，也不把 automatic-only strategy 宣传为可选来源。Gemini 保留旧 UI/snapshot 导航 ID `google`，但 catalog identity 为 `gemini`，避免重复成 35 个条目。
 
 ## 统一 snapshot 语义
 
@@ -186,38 +222,115 @@ OpenRouter 官方 OAuth 授权 URL 没有定义 `state`，因此实现不伪造 
 
 Account Clear 会清除内存中的 management key、输入、snapshot 和 recent-call sidecar。Single-key Clear 还会取消本地 listener/task 并清除 OAuth key/verifier，但无法保证撤销已经由 `/auth/keys` 在 OpenRouter 服务端创建的 key；若授权完成后状态不确定，用户必须在 OpenRouter 官方账户页面撤销该 key。
 
+## CodexBar live 采集接线边界
+
+```text
+用户在 Settings 的 collector provider 表单选择 method、填写可选临时配置并点击 Check usage
+  -> CollectionTargetKey + routeID + runID + generation
+  -> immutable Dashis ProviderRouteRegistry
+       拒绝 .auto、未知 route 和不匹配的 source/strategy/pin/manifest/live revision
+  -> ProviderRunCoordinator
+       同 target supersession / wall-clock result deadline / late-result rejection
+  -> CollectorWorkerClient
+       <= 256 KiB Data request
+       exact route authorization + broker lease + consentGranted
+       connection-scoped reverse configuration broker
+       只允许 route 声明的键，且最多解析一次
+       cancel RPC -> 250 ms grace -> invalidate connection
+  -> DashisCollectorWorker.xpc
+       single-flight / duplicate request-ID rejection
+       Worker-owned exact route authorization
+       wire v4 handshake + 34/52/50 staging inventory
+       41 live routes + live revision + manifest-set digest
+       高风险 route 必须收到本次 consent
+       从 reverse broker 解析本次配置
+       临时安装 route 允许键；其它继承环境已在启动时清除
+       为本 operation 构造 exact single-strategy policy
+       deadline -> cancel + collector.shutdown + 2 s grace
+                -> Worker process-group kill + _exit fallback
+  -> <= 2 MiB Data reply
+  -> CollectorOutcomeValidator
+       schema / target / source / strategy / attempts / account / time / finite values
+  -> ProviderObservation
+  -> ProviderObservationSnapshotProjection
+  -> ProviderSnapshot
+  -> 既有 summary/detail projection
+
+四个 native provider 不经过上述 collector 路径：
+
+native UI action
+  -> existing native client / typed NativeProviderObservationExecutor
+  -> NativeSnapshotObservationBridge 或既有 ProviderSnapshot 链路
+
+Worker 内部：
+
+已通过 route authorization 的 explicit CollectorRequest
+  -> 本 operation 唯一 exact request rule
+  -> 本 operation 唯一 planning rule
+  -> ambient account 或 host-confirmed selected account context
+  -> CodexBar descriptor 生成 strategy list
+  -> 本 operation 唯一 exact strategy rule + conservative capability envelope
+  -> isAvailable
+  -> fetch / provider-specific fallback
+  -> returned strategy ID/kind 必须等于 exact-approved strategy
+  -> selected account 的 usage identity + dashboard email 必须满足 host expectation
+  -> CollectorOutcome schema v2
+       raw source + strategy + attempts
+       ambient / hostResolved / resultVerified account state
+       raw usedPercent / 100-usedPercent（不 clamp）
+       window/reset/placeholder/usageKnown
+       usage/credits/cost component timestamps
+       live provider artifacts / dashboard / sanitized diagnostics
+```
+
+上游锁定 CodexBar stable v0.45.2 的实际 commit `91560ca98e776b96fdf910d4a0423c2f0c07a3b9`。Core、SQLite shim 与 Claude watchdog 源码保持原样；Dashis-owned manifest、policy、DTO 和 facade 位于上游目录之外。后续更新必须人工锁新 release，审查 provider enum/descriptor、endpoint、credential path/writeback、subprocess、依赖与许可证，再整体替换。
+
+App target 只链接 `DashisCollectorContract`；`CodexBarCollector` 和 Core 只存在于 Worker target。XPC selector 只传 `Data`，wire v4 日期固定为 Unix 毫秒，budget 为 1–120000 ms，request/response cap 分别为 256 KiB/2 MiB；握手固定 rollout revision、34/52/50 数量、41 条 live route、live revision 与 manifest-set digest。collect 必须携带 exact route/strategy/manifest/upstream-pin/live-revision authorization、一次性 broker lease 和本次 consent。Worker 是故障与生命周期隔离边界，不是完整权限 sandbox；当前 Debug App/Worker 为 ad-hoc 签名。
+
+`CollectorRolloutCatalog` 是 Core-independent 的审计/staging inventory；`CollectorLiveRouteCatalog` 才是当前 production collector route 的唯一来源。live catalog 再维护一份显式冻结的 authorized binding ID 列表，所以新增 staging binding 不会自动上线。App 和 Worker 编译同一份 route identity，握手以 live revision 和 manifest-set digest 证明双方集合一致。每条 live route 固定 provider/source/strategy、route-manifest digest、upstream pin、允许的临时配置键、observed effects、风险摘要与 consent 要求。route digest 绑定执行字段，但 observed effects 仍只是审计线索，不是完整 effect manifest。`opencodego.local`、`kimi.cli`、`mimo.local` 没有 explicit source，只能留在 staging，不能用被禁止的 `.auto` 伪造 exact route。
+
+App Settings 表单的临时配置只存在于 `DashisProviderStore` 内存；每次 collect 建立新 XPC connection 和新 broker lease，只向 Worker 释放所选 route 声明的键，broker 成功解析一次后即消费并移除值。App 启动环境中与当前 route 同名的键也通过这条 lease 释放，页面输入覆盖它。`Clear session data` 会失效当前 generation，并清除该 provider 的 route 输入、observation 和 snapshot。字段留空时，strategy 仍可能使用匹配的本地 provider/CLI/browser 配置。这个 reverse broker 只管理 route 配置值，不是通用 credential、文件、网络或进程代理。
+
+Worker 入口只保留 HOME/PATH/TMPDIR/locale/XDG/XPC、CI/test-safety 等明确 runtime allowlist，并清除其它全部继承环境；每次 collect 把 broker 允许键同时安装到 facade context 与真实 process environment，操作结束后恢复。这样直接读取 `ProcessInfo.processInfo.environment` 或继承环境的子进程也只能看到本 route 的一次性值，而不能看到其它 provider 的 ambient 变量。context 还禁用持久 CLI session，并拒绝 `debugKeepCLISessionsAlive`。Core 仍可通过 HOME 等基础路径访问硬编码 provider 文件、浏览器数据、Keychain service、自己的网络客户端或 credential writeback；login-shell locator 也可能按用户 shell 配置加载环境。因此 exact policy、reverse broker 与 XPC 边界不能描述为完整进程、存储、网络或凭据 sandbox。
+
+strategy kind 不能作为权限边界：pinned Core 的 API/OAuth/Web/CLI strategy 可嵌套其它 probe。当前每次 operation 仍保守使用完整 capability envelope，并另以 exact strategy ID、manifest、pin 和 live revision 限定顶层路径；新 strategy ID 不会命中旧 route。fetch 返回的 strategy ID/kind 还必须与通过 gate 的顶层 strategy 完全一致，否则按 provenance mismatch 终止。这个 gate 不会递归拦截一个已授权顶层 strategy 内部直接调用的其它 adapter，因此顶层 strategy 仍是 opaque 权限单元。风险摘要来自 pinned 源码中观察到的 effects，不代表 runtime 已拦截所有内部副作用；需要 browser session/launch、Keychain、process/subprocess、写回、远程 mutation、潜在计费或可配置 endpoint 的 route 会在 UI 和 Worker 两端要求本次逐次 consent。
+
+host deadline 会发送 cancel RPC、等待 250 ms 后 invalidate XPC connection，防止迟到结果进入当前 generation。Worker 从操作开始同步计时：到期先取消 task 并调用 `collector.shutdown()`，给 Core/CLI 2 秒退出；仍未完成时对 Worker 自有 process group 发出 `SIGKILL` 并 `_exit(124)`，App 后续 XPC 连接会启动新 Worker。这是 operation-scoped hard-stop 兜底，但自行创建新 process group 或脱离 Worker 的后代是否全部终止仍需发布级验证；它不等于完整进程树 sandbox。
+
 ## OAuth 与网络安全边界
 
 - OAuth 使用系统默认浏览器，由 `NSWorkspace` 打开 provider 授权 URL；不是 `ASWebAuthenticationSession`。
 - loopback listener 只绑定随机 `127.0.0.1` 端口，callback path 含随机 nonce；不绑定 `localhost`、IPv6 或外部接口。
 - Google 和 OpenRouter 分别使用独立 `ProviderConnectionCoordinator`；Clear 一个 provider 不应取消另一个 provider 的连接。
-- 所有远端数据请求经 `ProviderHTTPClient`；配置为 ephemeral、无 cache、无 cookie、无 credential store，响应上限 8 MiB。
+- 四个 native provider 的远端数据请求经 Dashis `ProviderHTTPClient`；配置为 ephemeral、无 cache、无 cookie、无 credential store，响应上限 8 MiB。collector Worker 使用 pinned CodexBar Core 自己的网络客户端，不受这条 App allowlist 逐请求代理。
 - 远端 redirect 一律拒绝；POST token/code exchange 不重试，只有 GET/HEAD 可对有限的 429/502/503/504 或瞬时网络错误重试一次。
 - `ProviderEndpointPolicy` 校验 HTTPS、标准端口、精确 host/path/method/query/body schema，并拒绝 embedded credentials、fragment、trailing slash 与未允许字段。
 - 错误只进入净化摘要；不显示 Authorization、key、code、verifier、完整请求/响应或账号标识。
 
 ## 状态生命周期
 
-所有远端检查由用户显式动作触发。Store 使用每-provider generation 和 operation ID：切换 mode、Clear 或开始新动作后，旧异步响应不能重新写回 UI。Google access token、OpenRouter OAuth key/management key、Codex Enterprise analytics key 与 PKCE/OAuth 中间状态只存在于当前 App session。
+所有远端检查由用户在 Settings 中的显式动作触发；启动 App、浏览 Dashboard 或打开 provider 展示页都不会自动执行 collector。Store 使用每-provider generation 和 operation ID：切换 mode、Clear 或开始新动作后，旧异步响应不能重新写回 UI。collector 临时配置、Google access token、OpenRouter OAuth key/management key、Codex Enterprise analytics key 与 PKCE/OAuth 中间状态只存在于当前 App session。
 
-Claude 是唯一允许事件驱动写入本地净化 snapshot 的 bridge；该文件只含白名单 quota 字段，不是凭据或完整 provider 响应。当前没有 refresh token 或 API key 的跨启动持久化；未来若引入 Keychain，必须作为独立凭据政策变更评审。
+Claude 是唯一允许事件驱动写入本地净化 snapshot 的 bridge；该文件只含白名单 quota 字段，不是凭据或完整 provider 响应。provider 显示开关是另一类、只含 catalog ID 的非敏感 UserDefaults 偏好，不属于 provider 数据或凭据。当前没有 refresh token 或 API key 的跨启动持久化；未来若引入 Keychain，必须作为独立凭据政策变更评审。
 
 ## UI 与设计边界
 
-- Sidebar 固定为 Dashboard、Codex、Claude、Google AI、OpenRouter；没有说明型 Settings 或 Add provider。
-- UI 调整必须保留旧版 Dashis 外壳而不是重写：品牌 28 pt serif、页标题 32 pt serif、Sidebar min 176 / ideal 218、导航约 14 pt serif 且行距约 40 pt、选中态为低对比浅蓝；详情容器使用 14 pt 纵向 spacing 与 horizontal 30 / top 26 / bottom 30 外边距，provider 内容最大宽度 900，外层最大宽度 1180。
-- Dashboard 用带分隔线的扁平列表展示四条摘要；空态每条只保留 provider 名称、主值和一个动作，不显示 kind、source/freshness、辅助统计或解释小字，也不把四条摘要包装成卡片墙。
+- Sidebar 列表顶部固定显示不可选择的原有 `Dashis` 品牌标题：28 pt semibold Serif、原 vertical padding 与 `x: 7 / y: 9` 位置；其后固定 `Dashboard`、唯一 `Settings` 入口与当前开启 provider 的展示导航。主 Sidebar 没有搜索。Sidebar 的 min/ideal/max 均为 218 pt，没有重复的 `Providers` 页面或 Add provider。所有普通导航标签允许压缩、保持单行、尾部截断并为 provider 提供 tooltip，选择 provider 进入纯数据展示页。
+- Dashboard 按 catalog 稳定顺序显示当前开启 provider 的自适应卡片网格：内容宽时双列、空间不足时单列。每个 provider 只使用一张系统 `GroupBox` 外层展示卡；未检查 collector 明确显示 `Not checked`。整张卡只打开该 provider 的数据展示，不运行检查、连接或配置，也不显示 `Configure` 按钮。全部 provider 关闭时显示指向 Settings 的系统空态。不得伪造余额、窗口、连接状态或指标数。
+- Settings 是唯一配置入口和 provider 展示管理入口。进入后，唯一外层 `NavigationSplitView` 的 detail 内使用固定 220 pt、不可折叠的设置面板、被动系统 `Divider` 和可伸缩 grouped `Form`。原生 `NSSearchField` 始终搜索完整 34-provider catalog；下面的系统 `.inset` `List` 每行右侧用原生 switch 控制该 provider 是否出现在主 Sidebar 与 Dashboard，默认全部开启。关闭不删除 provider、snapshot、设置、route、observation 或采集能力，偏好跨启动保留；二级选择只改变右侧 grouped `Form`，不会自动检查。provider 名称必须可压缩、单行尾部截断并提供 tooltip，switch 固定使用系统尺寸；行内不得加入显式水平 spacing、非零最小 `Spacer` 或额外左右 padding。Connection、method、credentials、bridge/OAuth、consent、Check、Clear、Advanced 和 OpenRouter recent-call 查询全部位于这里，provider 展示页不出现设置控件。
+- 壳层遵循 macOS 26/27 系统结构：全窗口只有默认样式的一个 `NavigationSplitView` 及其 218 pt `.sidebar` List；Settings detail 内使用原生 `NSSearchField`、220 pt `.inset` List、switch `Toggle`、被动 `Divider` 和 grouped `Form`，没有第二个 split、column visibility 或恢复按钮。`navigationTitle`、Dashboard `ScrollView` / `LazyVGrid` / `GroupBox`、展示页 `ScrollView`、表单、菜单与按钮继续由系统控制。原有 Serif `Dashis` 品牌、位置和稳定的 218 pt 主 Sidebar 是有意保留的品牌/几何例外；不得把 Serif 或手工 offset 扩散到普通导航/正文，也不自绘 Liquid Glass。只有 route/strategy 等代码类内容使用 monospace。若上次顶层选择是 Settings，启动时先回到 Dashboard，避免把配置工作区恢复成主界面初始状态。
+- provider 身份在 Sidebar 和 Dashboard 卡头中只以名称表达，不使用 `network`、`cloud`、`terminal`、`globe` 等无法区分真实服务商的泛化图标，也不显示装饰性 chevron。只为 warning、failure 和更多操作保留有明确行为/状态语义的 SF Symbol。
 - 有真实数据或风险时只增加一个必要限定词：`Experimental`、`Estimated`、`Manual`、`Historical`、`Stale`、`Expired`、失败/超额或 warning；正常状态不额外占行。
-- provider route 无 snapshot 时直接显示主操作，不显示占位明细、默认帮助段落或无状态可清的 Clear；有本地状态后才出现对应 Clear。有 snapshot 时，返回的主要 quota/balance（或没有 quota 时的主 KPI）以两列低噪声卡片呈现。当前 App 最小布局支持两列；只有未来布局约束确实不足时才允许降为一列。
-- 主卡片内部只保留 label、主要数值/descriptor、可验证进度与必要 reset/status。额外 quota/metric 与 source/scope/observed metadata 分别放进默认折叠的 disclosure；warning 与 partial failure 不套额外卡片，在主卡片下各完整展示一次。
-- 同一屏内不通过 primary、caption、stats、progress 和 raw lines 重复表达同一份 snapshot 数据；类型化 projection 是 detail 的唯一数值布局入口，高级配置继续留在用户主动展开的 disclosure 中。
-- 主题保持 macOS 系统白/黑，语义色只表达 connected/watch/incident；Dashis 品牌、页标题与主数值保留原有 macOS system serif，正文、控件和辅助信息使用 system sans，只有代码/日志类内容使用 monospace。
-- Codex Analytics 网页的用途仅限于校准 quota/balance 的信息优先级、进度表达与去重；它不能成为替换 Dashis 字体、Sidebar、字号、位置、间距或品牌身份的整页重写依据。
-- 不重新引入装饰性品牌块、subtitle 堆叠、Recent monitors、timeline、旧 Models/Runs/Alerts、首页小指标网格或 inspector-first 布局。
+- 每个 provider route 无 snapshot 时，Dashboard 卡与纯展示页的系统主卡都只显示 provider 名称与真实空态；四个 native provider 不改为 CodexBar collector。Dashboard 卡和展示页不附带配置或主操作。Settings provider Form 限制为最大 900 pt、字段最大 420 pt；collector 设置按 `Connection → Credentials（仅有字段时）→ Check Usage → Advanced` 排列。没有字段时不显示重复的 Access section；method footer、凭据生命周期 footer、常驻 consent/risk section 和 Advanced 运行说明均不渲染。高风险 route 的摘要只在点击主操作后的逐次 alert 中出现，consent gate 不变。native provider 仍按各自任务分组，但不再显示常驻解释 footer。exact route/source/strategy 放进单一 `Advanced`，有可清状态时才在 section header 的更多操作菜单提供 `Clear session data`。
+- 每个 Settings provider 屏只保留一个当前可执行的主操作。Dashboard 与 provider 详情复用同一 `ProviderVisualizationProjection`：Dashboard 每项是一张紧凑系统 `GroupBox`，详情页则是一张更完整的顶层系统 `GroupBox`。两处最多突出两个同层级主数据 pane：订阅型数据优先选择 5-hour/7-day 等 quota windows；没有窗口但有 balance 时只突出 balance；窗口与 balance 都没有时才选择前两个 metric。Dashboard 卡在双列宽度内横排两个 pane，不承载额外数据；详情卡空间不足时可纵排，窗口存在时的 balance、其余 balance/metric 与 source/scope/observed metadata 放进同一卡片内默认折叠的 disclosure。
+- Dashboard 卡内部只保留 provider header、必要限定、label、主要数值/descriptor、系统 `ProgressView` 与必要 reset/status；不显示 metadata 或长 warning body，异常只用必要限定引导用户进入详情。详情主卡再完整呈现 warning、partial failure、额外 usage 与 metadata，但不另套 surface。两处都不嵌套小卡，不使用手绘卡片背景、进度轨道或装饰性阴影。配置、凭据、风险确认和 `Advanced` 只存在于 Settings 的系统 section，绝不与展示卡混排。
+- 同一展示屏内不通过 primary、caption、stats、progress 和 raw lines 重复表达同一份 snapshot 数据；类型化 projection 是展示页的唯一数值布局入口，高级配置只留在 Settings 中用户主动展开的 disclosure。
+- Codex Analytics 网页的用途仅限于校准 quota/balance 的信息优先级、进度表达与去重；最终交互与壳层仍遵循 macOS 原生组件和平台层级。
+- 不删除或重新解释 Sidebar 顶部的原有 `Dashis` 品牌：28 pt Serif、既定位置与 Sidebar 宽度必须保留。品牌本身不附加图标、subtitle、背景或额外装饰，也不把该字体/offset 用到 provider 导航；不恢复 Recent monitors、timeline、旧 Models/Runs/Alerts、首页小指标网格或 inspector-first 布局。
 
 ### Debug 视觉 fixture
 
-Debug 构建接受 `--visual-qa` launch argument。它只向 Store 注入一份固定、合成的 Codex snapshot 并将路由切到 Codex detail，用于截图、两列卡片、进度和层级的视觉回归；fixture 初始化不读取 `~/.codex/auth.json`、其它账户文件、credential 或真实 provider response，也不自动发起网络请求。该路径不属于产品数据源，Release 构建不启用，不能用于证明真实 provider correctness。
+Debug 构建接受 `--visual-qa` launch argument。它只向 Store 注入一份固定、合成的 Codex snapshot 并将路由切到 Codex 纯展示页；样本包含 5-hour、7-day 两个主窗口与一个次级余额，用于截图、双主指标、进度和折叠层级的视觉回归。fixture 初始化不读取 `~/.codex/auth.json`、其它账户文件、credential 或真实 provider response，也不自动发起网络请求。该路径不属于产品数据源，Release 构建不启用，不能用于证明真实 provider correctness。
 
 ## 未确认架构
 
@@ -225,3 +338,4 @@ Debug 构建接受 `--visual-qa` launch argument。它只向 Store 注入一份�
 - 后端/BFF、数据库、通知、定时刷新、长期历史与 dashboard 业务 KPI：`UNKNOWN`。
 - OpenRouter/Google refresh token 是否可持久化到 Keychain：未批准；当前明确不持久化。
 - Google consumer 若未来发布官方第三方余额 API、Codex personal 若未来发布公开 quota API：需要重新研究和安全评审，不能自动沿用当前 manual/private 路径。
+- 非 App Store 分发方向已确定；正式产物需使用同一 Developer ID 为 App、XPC Worker 与辅助 executable 签名并完成 notarization。当前 ad-hoc Debug 签名不代表 release 配置已经完成。
