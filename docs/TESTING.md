@@ -1,5 +1,15 @@
 # TESTING
 
+## 外部依赖与禁止兜底验证（Vitemis 强制规则）
+
+本项目继承 `/Users/vita/Vitemis/docs/DEPENDENCY_POLICY.md`。涉及外部能力的变更必须验证：
+
+- exact 外部依赖可用时只调用其官方 API/扩展点，不调用第一方重复实现。
+- 依赖缺失、版本不兼容或构建/签名/许可证/平台/安全条件不成立时，产生明确、可诊断失败并停止该能力。
+- 失败路径不会切换到 legacy、另一 provider/backend、adapter/shim、cache、mock、简化实现或不完整路径。
+- 测试 double 只存在于测试 target，不进入 production selection 或 runtime fallback。
+- Review 检查新增 wrapper/adapter/facade 是否仅为官方 API 必需的最薄接线；发现核心能力复制、第二实现或静默降级即判定失败。
+
 ## 当前测试面
 
 Dashis 当前有四个 Xcode target：
